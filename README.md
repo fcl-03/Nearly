@@ -36,7 +36,11 @@ t'accompagner. Meetup est trop formel, Tinder/Bumble c'est de la rencontre amour
 Facebook Events c'est de l'événementiel. Nearly se positionne entre les deux : petits
 groupes, vérification d'identité, ouvert à partir de 18 ans, pas de logique de dating.
 
-> **Démo vidéo** — *à venir*
+
+
+https://github.com/user-attachments/assets/25a5e9c4-153c-46b8-b5c0-275a71350f92
+
+
 
 ---
 
