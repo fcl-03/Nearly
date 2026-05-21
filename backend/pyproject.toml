@@ -1,0 +1,20 @@
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+[tool.ruff.lint]
+# Règles activées (par défaut + isort)
+select = ["E", "F", "I", "W"]
+
+# Règles ignorées globalement
+ignore = [
+    "E402",  # Imports pas en haut : on a parfois un setup logger/limiter avant les imports
+    "E501",  # Line too long (géré séparément par formatter)
+]
+
+[tool.ruff.lint.per-file-ignores]
+# SQLAlchemy : Mapped["User"] est une forward-reference résolue à runtime,
+# ruff la voit comme un nom non défini → faux positif.
+"app/models/*.py" = ["F821"]
+# Idem pour quelques services qui utilisent des forward refs
+"app/services/*.py" = ["F821"]

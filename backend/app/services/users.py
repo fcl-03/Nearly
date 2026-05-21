@@ -151,7 +151,6 @@ async def search_users(
         return []
 
     # Exclure les utilisateurs bloqués (dans les deux sens)
-    from sqlalchemy import or_
     blocked_by_me = select(Friendship.addressee_id).where(
         Friendship.requester_id == current_user_id, Friendship.status == "blocked"
     )

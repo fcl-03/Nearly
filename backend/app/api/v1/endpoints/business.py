@@ -25,7 +25,6 @@ from app.services.business import (
     get_business_stats,
     list_sponsored_events,
     update_business_account,
-    upgrade_plan,
 )
 
 router = APIRouter()

@@ -5,11 +5,11 @@ Usage : .venv/bin/python scripts/seed_recette.py
 """
 import asyncio
 import uuid
-import bcrypt
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 
+import bcrypt
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 
 async def seed():
@@ -24,8 +24,8 @@ async def seed():
             c = await seed_badges(db)
             print(f"Badges créés: {c}")
 
-        from app.models.user import User
         from app.models.ad import Ad
+        from app.models.user import User
 
         pw = bcrypt.hashpw(b"ChangeMe2026!", bcrypt.gensalt()).decode()
 
@@ -145,11 +145,11 @@ async def seed():
         await db.commit()
 
         print("=== Comptes crees ===")
-        print(f"Admin    : admin@nearly.app    / ChangeMe2026!")
-        print(f"Normal   : marie@nearly.app    / ChangeMe2026!")
-        print(f"Premium  : lucas@nearly.app    / ChangeMe2026!")
-        print(f"Business : resto@nearly.app    / ChangeMe2026!")
-        print(f"3 publicites creees")
+        print("Admin    : admin@nearly.app    / ChangeMe2026!")
+        print("Normal   : marie@nearly.app    / ChangeMe2026!")
+        print("Premium  : lucas@nearly.app    / ChangeMe2026!")
+        print("Business : resto@nearly.app    / ChangeMe2026!")
+        print("3 publicites creees")
         print()
         print("Le 5eme compte (ton test de A a Z) : tu le crees toi-meme via /register")
 

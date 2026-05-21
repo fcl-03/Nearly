@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.redis import is_token_banned
 from app.core.security import decode_token
-from app.models.event import Event, EventParticipant
+from app.models.event import EventParticipant
 from app.models.user import User
 from app.services.messages import get_history, message_to_dict, save_message
 from app.websockets.connection_manager import manager

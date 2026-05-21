@@ -84,6 +84,7 @@ async def list_my_events(
     """Retourne les sorties créées par l'utilisateur connecté."""
     from sqlalchemy import select
     from sqlalchemy.orm import selectinload
+
     from app.models.event import Event, EventParticipant
 
     result = await db.execute(
@@ -104,8 +105,9 @@ async def list_joined_events(
     current_user: User = Depends(get_current_user),
 ):
     """Retourne les sorties rejointes, triées par dernier message (le plus récent en premier)."""
-    from sqlalchemy import select, func
+    from sqlalchemy import func, select
     from sqlalchemy.orm import selectinload
+
     from app.models.event import Event, EventParticipant
     from app.models.message import Message
     from app.services.events import _build_response
@@ -275,6 +277,7 @@ async def invite_friends(
 ):
     """Invite des amis à rejoindre une sortie. Seul le créateur peut inviter."""
     from sqlalchemy import select
+
     from app.models.event import Event, EventParticipant
     from app.models.friendship import Friendship
     from app.services.notifications import create_notification

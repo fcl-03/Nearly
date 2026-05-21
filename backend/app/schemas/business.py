@@ -3,7 +3,6 @@ from datetime import datetime
 
 from pydantic import BaseModel, field_validator
 
-
 # ── Requêtes ──
 
 class BusinessCreateRequest(BaseModel):

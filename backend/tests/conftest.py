@@ -20,12 +20,13 @@ from fastapi.testclient import TestClient
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from main import app
 from app.models.user import User
+from main import app
 
 # Désactiver TOUS les rate limiters pour les tests
 app.state.limiter.enabled = False
 from app.api.v1.endpoints import auth as _auth_mod
+
 _auth_mod.limiter.enabled = False
 try:
     from app.api.v1.endpoints import friendships as _fr_mod
@@ -54,8 +55,9 @@ def setup_test_db():
     Applique les migrations sur la DB de test et crée les utilisateurs de base.
     S'exécute UNE FOIS avant tous les tests de la session.
     """
-    from alembic import command
     from alembic.config import Config
+
+    from alembic import command
 
     # Appliquer les migrations (synchrone)
     cfg = Config("alembic.ini")

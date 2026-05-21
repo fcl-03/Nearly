@@ -1,7 +1,6 @@
 import asyncio
 import io
 import logging
-from functools import partial
 from pathlib import Path
 
 import boto3

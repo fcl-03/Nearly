@@ -9,12 +9,11 @@ from sqlalchemy.orm import selectinload
 
 from app.api.deps import get_current_admin
 from app.core.database import get_db
-from app.models.event import Event, EventParticipant
+from app.models.event import Event
 from app.models.message import Message
 from app.models.report import Report
 from app.models.user import User
 from app.models.verification import IdentityVerification
-from app.services.storage import generate_presigned_url
 from app.schemas.admin import (
     BanRequest,
     EventAdminResponse,
@@ -25,6 +24,7 @@ from app.schemas.admin import (
     VerificationAdminResponse,
 )
 from app.schemas.auth import MessageResponse
+from app.services.storage import generate_presigned_url
 
 router = APIRouter()
 

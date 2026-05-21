@@ -12,7 +12,6 @@ from app.models.user import User
 from app.schemas.business import (
     BusinessCreateRequest,
     BusinessCreateSponsoredEvent,
-    BusinessResponse,
     BusinessSponsoredEventResponse,
     BusinessStatsResponse,
     BusinessUpdateRequest,

@@ -1,13 +1,11 @@
 import asyncio
 import logging
-import warnings
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 import sentry_sdk
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -19,9 +17,9 @@ from app.core.config import settings
 # Initialisation Sentry (monitoring d'erreurs en production)
 if settings.SENTRY_DSN:
     sentry_sdk.init(dsn=settings.SENTRY_DSN, traces_sample_rate=0.1)
-from app.core.database import AsyncSessionLocal
 from datetime import datetime, timezone
 
+from app.core.database import AsyncSessionLocal
 from app.core.redis import close_redis, init_redis
 from app.websockets.chat import router as ws_router
 
@@ -36,6 +34,7 @@ async def _cleanup_loop() -> None:
             try:
                 # 1. Désactiver les sorties dont la date est passée
                 from sqlalchemy import update
+
                 from app.models.event import Event
                 result = await db.execute(
                     update(Event)

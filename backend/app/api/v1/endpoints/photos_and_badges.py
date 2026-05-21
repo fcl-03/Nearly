@@ -1,6 +1,5 @@
-import uuid
-
 import json
+import uuid
 
 from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession

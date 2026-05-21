@@ -21,7 +21,6 @@ from app.services.friendships import (
     send_friend_request,
     unblock_user,
 )
-from app.services.users import get_user_with_interests
 
 router = APIRouter()
 
@@ -137,6 +136,7 @@ async def list_blocked_users(
 ):
     """Retourne la liste des utilisateurs bloqués par l'utilisateur connecté."""
     from sqlalchemy import select as sel
+
     from app.models.friendship import Friendship as F
     result = await db.execute(
         sel(F).where(F.requester_id == current_user.id, F.status == "blocked")

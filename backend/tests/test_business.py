@@ -1,7 +1,6 @@
 """Tests d'intégration — Comptes business et sorties sponsorisées."""
 from datetime import datetime, timedelta, timezone
 
-import pytest
 from fastapi.testclient import TestClient
 
 from tests.conftest import auth

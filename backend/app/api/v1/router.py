@@ -1,6 +1,21 @@
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import admin, ads, analytics, auth, business, events, friendships, messages, notifications, payments, photos_and_badges, reports, users, verification
+from app.api.v1.endpoints import (
+    admin,
+    ads,
+    analytics,
+    auth,
+    business,
+    events,
+    friendships,
+    messages,
+    notifications,
+    payments,
+    photos_and_badges,
+    reports,
+    users,
+    verification,
+)
 
 router = APIRouter()
 

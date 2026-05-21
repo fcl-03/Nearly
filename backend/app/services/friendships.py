@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 

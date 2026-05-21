@@ -1,9 +1,8 @@
 import uuid
 
 from fastapi import HTTPException, status
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.models.badge import Badge, UserBadge
 from app.models.event import EventParticipant
