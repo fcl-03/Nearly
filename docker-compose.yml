@@ -1,0 +1,58 @@
+services:
+  db:
+    image: postgis/postgis:15-3.4
+    container_name: nearly_db
+    environment:
+      POSTGRES_USER: nearly
+      POSTGRES_PASSWORD: nearly_dev
+      POSTGRES_DB: nearly
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nearly"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: nearly_redis
+    command: redis-server --appendonly yes --requirepass "${REDIS_PASSWORD:-nearly_dev}"
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: nearly_backend
+    env_file:
+      - ./backend/.env.docker
+    volumes:
+      - ./backend/dev_uploads:/app/dev_uploads
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    container_name: nearly_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  redis_data:

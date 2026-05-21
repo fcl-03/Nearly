@@ -1,0 +1,146 @@
+@import "tailwindcss";
+
+/* ── Thème sombre (défaut) ── */
+:root {
+  --bg: #0B0D11;
+  --surface: #16192A;
+  --surface2: #1E2235;
+  --surface3: #252840;
+  --accent: #E8FF47;
+  --accent-text: #E8FF47;
+  --accent-border: #E8FF47;
+  --on-accent: #0B0D11;
+  --accent-shadow: none;
+  --green: #3DDB82;
+  --orange: #FF7A3D;
+  --violet: #9B7EF8;
+  --blue: #3DBFFF;
+  --text: #F0F2F8;
+  --text-secondary: #858AA8;
+  --text-tertiary: #4A4F66;
+  --border-color: #252836;
+  --accent-shadow: none;
+  --bg-blur: rgba(11,13,17,0.92);
+  --card-gradient: linear-gradient(160deg, #13151C 0%, #161820 100%);
+  --premium-bg: #1A1600;
+}
+
+/* ── Thème clair ── */
+html.light {
+  --bg: #F4F5F9;
+  --surface: #FFFFFF;
+  --surface2: #ECEEF5;
+  --surface3: #E2E4EF;
+  --accent: #0F1014;
+  --accent-text: #0F1014;
+  --accent-border: #0F1014;
+  --on-accent: #FFFFFF;
+  --green: #1E9E58;
+  --orange: #D95A14;
+  --violet: #6B52D8;
+  --blue: #1A9FE0;
+  --text: #0B0D11;
+  --text-secondary: #4A4F66;
+  --text-tertiary: #858AA8;
+  --border-color: #D4D7E8;
+  --bg-blur: rgba(244,245,249,0.92);
+  --premium-bg: #FFFBE6;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; scrollbar-width: none; -ms-overflow-style: none; }
+*::-webkit-scrollbar { display: none; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "DM Sans", system-ui, sans-serif;
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+h1, h2, h3, h4, h5, h6 { font-family: 'Syne', sans-serif; letter-spacing: -0.4px; }
+
+/* Utilitaires DA — interactions */
+.press-scale { transition: transform 0.12s cubic-bezier(0.16,1,0.3,1); }
+.press-scale:active { transform: scale(0.97); }
+
+/* Fix Leaflet */
+.leaflet-pane { z-index: 10 !important; }
+.leaflet-top, .leaflet-bottom { z-index: 20 !important; }
+
+/* Input date/time */
+html:not(.light) input[type="date"],
+html:not(.light) input[type="time"] { color-scheme: dark; }
+html.light input[type="date"],
+html.light input[type="time"] { color-scheme: light; }
+
+/* ── Responsive — largeur contenu adaptative ── */
+.nearly-main {
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+/* Tablette : contenu plus large, centré */
+@media (min-width: 768px) {
+  .nearly-main {
+    max-width: 600px;
+  }
+  .nearly-bottomnav-inner {
+    max-width: 600px !important;
+  }
+  .nearly-content-box {
+    max-width: 600px;
+  }
+}
+
+/* Desktop : encore plus large */
+@media (min-width: 1024px) {
+  .nearly-main {
+    max-width: 720px;
+  }
+  .nearly-bottomnav-inner {
+    max-width: 720px !important;
+  }
+  .nearly-content-box {
+    max-width: 720px;
+  }
+}
+
+/* Grand écran */
+@media (min-width: 1440px) {
+  .nearly-main {
+    max-width: 800px;
+  }
+  .nearly-bottomnav-inner {
+    max-width: 800px !important;
+  }
+  .nearly-content-box {
+    max-width: 800px;
+  }
+}
+
+/* Grille 2 colonnes pour les cartes sur tablette+ */
+@media (min-width: 768px) {
+  .nearly-events-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 14px !important;
+  }
+  .nearly-events-grid > * {
+    width: 100% !important;
+  }
+}
+
+/* Animations partagées */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-8px); }
+}
