@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Building2, ChevronRight, Database, FileText, HelpCircle, LogOut, Moon, Sun, Trash2, User, Zap, ShieldOff } from 'lucide-react'
+import { ArrowLeft, Building2, ChevronRight, Database, FileText, HelpCircle, LogOut, Moon, Sun, Trash2, User, Zap, ShieldOff, Bug } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { useThemeStore } from '../../stores/themeStore'
 import api from '../../services/api'
@@ -31,6 +31,36 @@ export default function SettingsPage() {
   const [deleteInput, setDeleteInput] = useState('')
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState(null)
+
+  // État de la modale "Signaler un bug"
+  const [showBugModal, setShowBugModal] = useState(false)
+  const [bugMessage, setBugMessage] = useState('')
+  const [bugSending, setBugSending] = useState(false)
+  const [bugError, setBugError] = useState(null)
+  const [bugSuccess, setBugSuccess] = useState(false)
+
+  async function handleSendBug() {
+    if (bugMessage.trim().length < 10) {
+      setBugError('Décris le bug en au moins 10 caractères.')
+      return
+    }
+    setBugSending(true)
+    setBugError(null)
+    try {
+      await api.post('/bug-reports', {
+        message: bugMessage.trim(),
+        page_url: window.location.pathname,
+        user_agent: navigator.userAgent.slice(0, 500),
+      })
+      setBugSuccess(true)
+      setBugMessage('')
+      setTimeout(() => { setShowBugModal(false); setBugSuccess(false) }, 1800)
+    } catch (err) {
+      setBugError(err.response?.data?.detail || 'Erreur lors de l\'envoi. Réessaie.')
+    } finally {
+      setBugSending(false)
+    }
+  }
 
   // Déconnexion
   async function handleLogout() {
@@ -420,6 +450,19 @@ export default function SettingsPage() {
               contact@nearly.app
             </span>
           </a>
+          <div style={rowDivider} />
+          <button
+            onClick={() => setShowBugModal(true)}
+            style={rowBase}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'none'}
+          >
+            <Bug size={16} color="var(--orange, #FF7A3D)" />
+            <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 14, color: 'var(--text)', flex: 1 }}>
+              Signaler un bug
+            </span>
+            <ChevronRight size={17} color="var(--text-tertiary)" />
+          </button>
         </div>
 
         {/* ── Utilisateurs bloqués ── */}
@@ -494,6 +537,128 @@ export default function SettingsPage() {
           error={deleteError}
         />
       )}
+
+      {/* ── Modale "Signaler un bug" ── */}
+      {showBugModal && (
+        <BugReportModal
+          message={bugMessage}
+          setMessage={setBugMessage}
+          onSend={handleSendBug}
+          onClose={() => { setShowBugModal(false); setBugMessage(''); setBugError(null); setBugSuccess(false) }}
+          sending={bugSending}
+          error={bugError}
+          success={bugSuccess}
+        />
+      )}
+    </div>
+  )
+}
+
+function BugReportModal({ message, setMessage, onSend, onClose, sending, error, success }) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: 'var(--surface1)',
+          borderRadius: 18,
+          padding: 24,
+          width: '100%',
+          maxWidth: 440,
+          border: '1px solid var(--border-color)',
+        }}
+      >
+        <h2 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 18, margin: '0 0 8px', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Bug size={20} color="var(--orange, #FF7A3D)" />
+          Signaler un bug
+        </h2>
+        <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 16px', lineHeight: 1.5 }}>
+          Décris ce qui ne fonctionne pas. On capture automatiquement la page et le navigateur pour aider à reproduire.
+        </p>
+
+        {success ? (
+          <div style={{
+            background: 'rgba(61,219,130,0.1)', border: '1px solid rgba(61,219,130,0.3)',
+            borderRadius: 11, padding: '14px 16px', fontSize: 14, color: 'var(--green)',
+            fontFamily: 'DM Sans, sans-serif', textAlign: 'center',
+          }}>
+            ✓ Merci ! Ton signalement a bien été enregistré.
+          </div>
+        ) : (
+          <>
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Ex : Quand je clique sur Rejoindre, rien ne se passe et la page se recharge."
+              rows={5}
+              maxLength={2000}
+              disabled={sending}
+              style={{
+                width: '100%',
+                background: 'var(--surface2)',
+                border: '1px solid var(--border-color)',
+                borderRadius: 11,
+                padding: '12px 14px',
+                color: 'var(--text)',
+                fontSize: 14,
+                fontFamily: 'DM Sans, sans-serif',
+                outline: 'none',
+                resize: 'vertical',
+                boxSizing: 'border-box',
+              }}
+            />
+            <p style={{ fontSize: 11, color: 'var(--text-tertiary)', textAlign: 'right', margin: '4px 0 0' }}>
+              {message.length} / 2000
+            </p>
+
+            {error && (
+              <div style={{
+                background: 'rgba(255,122,61,0.1)', border: '1px solid rgba(255,122,61,0.2)',
+                borderRadius: 11, padding: '10px 14px', fontSize: 13, color: 'var(--orange)',
+                marginTop: 12,
+              }}>
+                ⚠ {error}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+              <button
+                onClick={onClose}
+                disabled={sending}
+                style={{
+                  flex: 1, background: 'var(--surface2)', color: 'var(--text)',
+                  border: '1px solid var(--border-color)', borderRadius: 11,
+                  padding: '12px 0', fontSize: 14, fontWeight: 600, fontFamily: 'DM Sans, sans-serif',
+                  cursor: sending ? 'not-allowed' : 'pointer',
+                }}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={onSend}
+                disabled={sending || message.trim().length < 10}
+                style={{
+                  flex: 1, background: 'var(--accent)', color: 'var(--bg)',
+                  border: 'none', borderRadius: 11,
+                  padding: '12px 0', fontSize: 14, fontWeight: 700, fontFamily: 'DM Sans, sans-serif',
+                  cursor: (sending || message.trim().length < 10) ? 'not-allowed' : 'pointer',
+                  opacity: (sending || message.trim().length < 10) ? 0.5 : 1,
+                }}
+              >
+                {sending ? 'Envoi…' : 'Envoyer'}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   )
 }

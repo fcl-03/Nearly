@@ -32,6 +32,9 @@ class Event(Base):
 
     is_sponsored: Mapped[bool] = mapped_column(Boolean, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Si True : les demandes "Rejoindre" doivent être validées par le créateur.
+    # Sinon : join direct (comportement par défaut).
+    requires_approval: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     # Relations
@@ -48,7 +51,7 @@ class EventParticipant(Base):
     event_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("events.id", ondelete="CASCADE"), primary_key=True)
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     joined_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    status: Mapped[str] = mapped_column(String(20), default="joined")  # joined | left
+    status: Mapped[str] = mapped_column(String(20), default="joined")  # joined | left | pending | rejected
 
     event: Mapped["Event"] = relationship(back_populates="participants")
     user: Mapped["User"] = relationship(back_populates="event_participations")

@@ -5,6 +5,7 @@ from app.api.v1.endpoints import (
     ads,
     analytics,
     auth,
+    bug_reports,
     business,
     events,
     friendships,
@@ -33,3 +34,4 @@ router.include_router(payments.router, tags=["payments"])
 router.include_router(ads.router, prefix="/ads", tags=["ads"])
 router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
 router.include_router(business.router, prefix="/business", tags=["business"])
+router.include_router(bug_reports.router, tags=["bug-reports"])

@@ -57,6 +57,7 @@ export default function CreateEventPage() {
     time: '',
     max_participants: 4,
     event_type: 'small_group',
+    requires_approval: false,
   })
   const [coords, setCoords] = useState(null)
   const [suggestions, setSuggestions] = useState([])
@@ -128,6 +129,7 @@ export default function CreateEventPage() {
         longitude: coords.lon,
         starts_at,
         max_participants: form.event_type === 'open' ? null : parseInt(form.max_participants),
+        requires_approval: form.requires_approval,
       })
       navigate(`/events/${data.id}`, { replace: true })
     } catch (err) {
@@ -654,6 +656,59 @@ export default function CreateEventPage() {
               </div>
             </div>
           )}
+
+          {/* ── Toggle validation manuelle ── */}
+          <div
+            style={{
+              background: 'var(--surface2)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 14,
+              padding: '14px 16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 14,
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 14, color: 'var(--text)', margin: 0 }}>
+                Je valide chaque participant
+              </p>
+              <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: 'var(--text-tertiary)', margin: '3px 0 0', lineHeight: 1.4 }}>
+                Les demandes te seront envoyées : tu choisis qui rejoint la sortie.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => set('requires_approval', !form.requires_approval)}
+              role="switch"
+              aria-checked={form.requires_approval}
+              style={{
+                position: 'relative',
+                width: 44,
+                height: 26,
+                borderRadius: 99,
+                background: form.requires_approval ? 'var(--accent)' : 'var(--surface1)',
+                border: '1px solid var(--border-color)',
+                cursor: 'pointer',
+                flexShrink: 0,
+                padding: 0,
+                transition: 'background 0.15s',
+              }}
+            >
+              <span
+                style={{
+                  position: 'absolute',
+                  top: 2,
+                  left: form.requires_approval ? 20 : 2,
+                  width: 20,
+                  height: 20,
+                  borderRadius: '50%',
+                  background: form.requires_approval ? 'var(--bg)' : 'var(--text-tertiary)',
+                  transition: 'left 0.15s, background 0.15s',
+                }}
+              />
+            </button>
+          </div>
 
           {/* Erreur globale */}
           {errors._global && (

@@ -425,6 +425,11 @@ export default function EventDetailPage() {
             </button>
           </div>
         )}
+
+        {/* ── Demandes en attente (créateur uniquement, si validation manuelle) ── */}
+        {isCreator && event.requires_approval && (
+          <PendingRequestsSection eventId={event.id} onChange={fetchEvent} />
+        )}
       </div>
 
       {/* ── CTA fixe en bas ── */}
@@ -522,6 +527,38 @@ export default function EventDetailPage() {
             >
               Quitter ce groupe
             </button>
+          ) : event.join_status === 'pending' ? (
+            <div
+              style={{
+                width: '100%',
+                background: 'var(--surface2)',
+                border: '1px solid var(--accent-border, var(--border-color))',
+                color: 'var(--text)',
+                fontSize: 14,
+                fontFamily: 'DM Sans, sans-serif',
+                padding: '14px 16px',
+                borderRadius: 11,
+                textAlign: 'center',
+              }}
+            >
+              ⏳ Demande envoyée — en attente de validation
+            </div>
+          ) : event.join_status === 'rejected' ? (
+            <div
+              style={{
+                width: '100%',
+                background: 'rgba(255,122,61,0.1)',
+                border: '1px solid rgba(255,122,61,0.3)',
+                color: 'var(--orange, #FF7A3D)',
+                fontSize: 14,
+                fontFamily: 'DM Sans, sans-serif',
+                padding: '14px 16px',
+                borderRadius: 11,
+                textAlign: 'center',
+              }}
+            >
+              ✗ Ta demande n'a pas été retenue
+            </div>
           ) : (
             <button
               onClick={() => setShowConfirm(true)}
@@ -559,7 +596,11 @@ export default function EventDetailPage() {
                   }}
                 />
               )}
-              {event.is_full ? 'Complet — plus de place' : 'Rejoindre ce groupe →'}
+              {event.is_full
+                ? 'Complet — plus de place'
+                : event.requires_approval
+                  ? 'Demander à rejoindre →'
+                  : 'Rejoindre ce groupe →'}
             </button>
           )}
         </div>
@@ -1079,5 +1120,118 @@ function SectionLabel({ children }) {
     >
       {children}
     </p>
+  )
+}
+
+// ── Demandes en attente (créateur d'une sortie à validation manuelle) ─────
+function PendingRequestsSection({ eventId, onChange }) {
+  const navigate = useNavigate()
+  const [pendings, setPendings] = useState(null)
+  const [actionId, setActionId] = useState(null)
+
+  const load = useCallback(async () => {
+    try {
+      const { data } = await api.get(`/events/${eventId}/pending`)
+      setPendings(data)
+    } catch {
+      setPendings([])
+    }
+  }, [eventId])
+
+  useEffect(() => { load() }, [load])
+
+  async function action(userId, type) {
+    setActionId(userId)
+    try {
+      await api.post(`/events/${eventId}/pending/${userId}/${type}`)
+      setPendings(prev => prev.filter(p => p.id !== userId))
+      onChange?.() // rafraîchir l'event parent (compteur participants)
+    } catch {} finally {
+      setActionId(null)
+    }
+  }
+
+  if (pendings === null) return null
+  if (pendings.length === 0) {
+    return (
+      <div style={{ marginTop: 8 }}>
+        <SectionLabel>Demandes en attente</SectionLabel>
+        <p style={{ fontSize: 13, color: 'var(--text-tertiary)', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>
+          Aucune demande en attente.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ marginTop: 8 }}>
+      <SectionLabel>Demandes en attente ({pendings.length})</SectionLabel>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {pendings.map(u => (
+          <div
+            key={u.id}
+            style={{
+              background: 'var(--surface2)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 14,
+              padding: 12,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+            }}
+          >
+            <button
+              onClick={() => navigate(`/users/${u.id}`)}
+              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', flexShrink: 0 }}
+              aria-label={`Voir le profil de ${u.first_name}`}
+            >
+              {u.avatar_url ? (
+                <img src={u.avatar_url} alt={u.first_name} style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover' }} />
+              ) : (
+                <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--surface1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontWeight: 700, fontFamily: 'Syne, sans-serif' }}>
+                  {u.first_name?.[0]?.toUpperCase() ?? '?'}
+                </div>
+              )}
+            </button>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 14, color: 'var(--text)', margin: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+                {u.first_name}
+                {u.is_verified && <span style={{ color: 'var(--green)', fontSize: 11 }}>✓</span>}
+              </p>
+              {u.username && (
+                <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: '2px 0 0' }}>@{u.username}</p>
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+              <button
+                onClick={() => action(u.id, 'approve')}
+                disabled={actionId === u.id}
+                style={{
+                  background: 'var(--green)', color: 'var(--bg)', border: 'none',
+                  borderRadius: 10, padding: '8px 12px', fontSize: 12, fontWeight: 700,
+                  fontFamily: 'DM Sans, sans-serif', cursor: actionId === u.id ? 'not-allowed' : 'pointer',
+                  opacity: actionId === u.id ? 0.5 : 1,
+                }}
+              >
+                Accepter
+              </button>
+              <button
+                onClick={() => action(u.id, 'reject')}
+                disabled={actionId === u.id}
+                style={{
+                  background: 'transparent', color: 'var(--orange, #FF7A3D)',
+                  border: '1px solid rgba(255,122,61,0.3)',
+                  borderRadius: 10, padding: '8px 12px', fontSize: 12, fontWeight: 600,
+                  fontFamily: 'DM Sans, sans-serif', cursor: actionId === u.id ? 'not-allowed' : 'pointer',
+                  opacity: actionId === u.id ? 0.5 : 1,
+                }}
+              >
+                Refuser
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }

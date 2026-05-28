@@ -3,6 +3,7 @@ from app.models.ad import Ad
 from app.models.analytics import AnalyticsSnapshot
 from app.models.badge import Badge, UserBadge
 from app.models.base import Base
+from app.models.bug_report import BugReport
 from app.models.business import BusinessAccount, BusinessSponsoredEvent
 from app.models.event import Event, EventParticipant
 from app.models.friendship import Friendship
@@ -22,6 +23,7 @@ __all__ = [
     "UserPhoto", "PhotoLike", "PhotoTag",
     "IdentityVerification",
     "Report",
+    "BugReport",
     "Friendship",
     "Notification",
     "UserAchievement",
