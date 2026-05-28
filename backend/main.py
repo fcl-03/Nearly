@@ -63,13 +63,23 @@ async def _cleanup_loop() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Vérifications de sécurité au démarrage
-    if settings.SECRET_KEY == "change-this-in-production":
+    # On considère faible : valeurs par défaut connues, < 32 caractères, ou contenant "change"/"default"/"secret-key"
+    weak_secrets = {"change-this-in-production", "change-this-secret-key-in-production", "secret", "changeme"}
+    secret = settings.SECRET_KEY or ""
+    is_weak = (
+        secret in weak_secrets
+        or len(secret) < 32
+        or "change" in secret.lower()
+        or "default" in secret.lower()
+    )
+    if is_weak:
+        msg = (
+            "SECRET_KEY faible ou par défaut détectée ! "
+            "Génère une vraie clé : python -c \"import secrets; print(secrets.token_hex(32))\""
+        )
         if not settings.DEBUG:
-            raise RuntimeError(
-                "SECRET_KEY par défaut détectée en production ! "
-                "Génère une clé sécurisée : python -c \"import secrets; print(secrets.token_hex(32))\""
-            )
-        logger.critical("SECRET_KEY par défaut détectée — NE PAS utiliser en production !")
+            raise RuntimeError(msg)
+        logger.critical("⚠ %s (toléré uniquement en DEBUG)", msg)
 
     # Initialisation au démarrage
     await init_redis()

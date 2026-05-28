@@ -71,7 +71,12 @@ async def login_user(
     if user.is_banned:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Compte suspendu",
+            detail={
+                "code": "account_suspended",
+                "message": "Ton compte a été suspendu pour non-respect de nos règles d'utilisation.",
+                "contact_email": "support@nearly.app",
+                "help": "Si tu penses qu'il s'agit d'une erreur, contacte-nous par email pour demander un réexamen.",
+            },
         )
 
     access_token, _ = create_access_token(str(user.id))

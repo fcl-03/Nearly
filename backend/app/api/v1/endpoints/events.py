@@ -18,6 +18,7 @@ from app.schemas.events import (
     VoteResponse,
 )
 from app.services.events import (
+    approve_join_request,
     create_event,
     delete_event,
     get_event,
@@ -25,7 +26,9 @@ from app.services.events import (
     join_event,
     leave_event,
     list_events,
+    list_pending_requests,
     mark_event_read,
+    reject_join_request,
     request_deletion,
     update_event,
     vote_deletion,
@@ -52,7 +55,7 @@ async def create(
 async def list_all(
     lat: Annotated[float | None, Query(description="Latitude centre de recherche")] = None,
     lon: Annotated[float | None, Query(description="Longitude centre de recherche")] = None,
-    radius_km: Annotated[float, Query(ge=1, le=100, description="Rayon en km")] = 25.0,
+    radius_km: Annotated[float, Query(ge=1, le=200, description="Rayon en km")] = 50.0,
     category: Annotated[str | None, Query(description="Filtre par catégorie")] = None,
     event_type: Annotated[str | None, Query(description="small_group ou open")] = None,
     starts_after: Annotated[datetime | None, Query(description="Sorties après cette date")] = None,
@@ -245,6 +248,40 @@ async def leave(
         )
         await db.commit()
     return result
+
+
+@router.get("/{event_id}/pending", response_model=list[dict])
+async def list_pending(
+    event_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Liste les demandes de participation en attente (créateur uniquement)."""
+    return await list_pending_requests(db, current_user, event_id)
+
+
+@router.post("/{event_id}/pending/{user_id}/approve", response_model=MessageResponse)
+async def approve_pending(
+    event_id: uuid.UUID,
+    user_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Accepte la demande d'un utilisateur pour rejoindre la sortie."""
+    await approve_join_request(db, current_user, event_id, user_id)
+    return MessageResponse(message="Demande acceptée.")
+
+
+@router.post("/{event_id}/pending/{user_id}/reject", response_model=MessageResponse)
+async def reject_pending(
+    event_id: uuid.UUID,
+    user_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Refuse la demande d'un utilisateur pour rejoindre la sortie."""
+    await reject_join_request(db, current_user, event_id, user_id)
+    return MessageResponse(message="Demande refusée.")
 
 
 @router.post("/{event_id}/request-deletion", response_model=DeletionRequestResponse)

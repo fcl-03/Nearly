@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
 from sqlalchemy import func, select
@@ -46,6 +46,13 @@ def _build_response(
         p.user_id == current_user_id and p.status == "joined"
         for p in event.participants
     )
+    # État précis du user courant (joined / pending / rejected / None)
+    join_status = None
+    if current_user_id is not None:
+        for p in event.participants:
+            if p.user_id == current_user_id and p.status in ("joined", "pending", "rejected"):
+                join_status = p.status
+                break
     # Construire la liste des participants avec leurs infos profil
     participants_info = [
         ParticipantInfo(
@@ -82,12 +89,14 @@ def _build_response(
         max_participants=event.max_participants,
         is_sponsored=event.is_sponsored,
         is_active=event.is_active,
+        requires_approval=event.requires_approval,
         created_at=event.created_at,
         creator=event.creator,
         participants_count=participants_count,
         participants=participants_info,
         is_full=is_full,
         is_joined=is_joined,
+        join_status=join_status,
         distance_km=round(distance_km, 2) if distance_km is not None else None,
         deletion_poll=deletion_poll_info,
     )
@@ -110,6 +119,38 @@ async def create_event(db: AsyncSession, user: User, data: EventCreate) -> Event
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Tu dois vérifier ton identité avant de créer une sortie.",
         )
+
+    # Limites anti-spam (bypass admin) — à doubler pour premium quand activé
+    if not user.is_admin:
+        now = datetime.now(timezone.utc)
+
+        # Max 2 sorties actives en même temps (futures, non supprimées)
+        active_count = await db.execute(
+            select(func.count(Event.id)).where(
+                Event.creator_id == user.id,
+                Event.starts_at > now,
+            )
+        )
+        if (active_count.scalar() or 0) >= 2:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Tu as déjà 2 sorties à venir. Termine ou supprime l'une d'elles avant d'en créer une nouvelle.",
+            )
+
+        # Max 3 sorties créées dans les 7 derniers jours
+        week_ago = now - timedelta(days=7)
+        week_count = await db.execute(
+            select(func.count(Event.id)).where(
+                Event.creator_id == user.id,
+                Event.created_at >= week_ago,
+            )
+        )
+        if (week_count.scalar() or 0) >= 3:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Tu as déjà créé 3 sorties cette semaine. Réessaie dans quelques jours.",
+            )
+
     event = Event(
         creator_id=user.id,
         title=data.title,
@@ -121,6 +162,7 @@ async def create_event(db: AsyncSession, user: User, data: EventCreate) -> Event
         longitude=data.longitude,
         starts_at=data.starts_at,
         max_participants=data.max_participants,
+        requires_approval=data.requires_approval,
     )
     db.add(event)
     await db.flush()  # Obtenir l'ID avant d'ajouter le participant
@@ -141,7 +183,7 @@ async def list_events(
     current_user_id: uuid.UUID | None = None,
     lat: float | None = None,
     lon: float | None = None,
-    radius_km: float = 25.0,
+    radius_km: float = 50.0,
     category: str | None = None,
     event_type: str | None = None,
     starts_after: datetime | None = None,
@@ -313,6 +355,55 @@ async def join_event(
             detail="Tu participes déjà à cette sortie",
         )
 
+    # ── MODE VALIDATION MANUELLE ────────────────────────────────────
+    # Si la sortie requiert validation et que ce n'est pas le créateur (ni un admin),
+    # on crée la participation en "pending" et on notifie le créateur.
+    needs_approval = event.requires_approval and user.id != event.creator_id and not user.is_admin
+    if needs_approval:
+        existing_pending = next(
+            (p for p in event.participants if p.user_id == user.id and p.status == "pending"), None
+        )
+        if existing_pending:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Ta demande est déjà en attente de validation",
+            )
+        existing_rejected = next(
+            (p for p in event.participants if p.user_id == user.id and p.status == "rejected"), None
+        )
+        if existing_rejected:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Ta demande pour cette sortie a déjà été refusée",
+            )
+
+        # Réutiliser une ligne "left" existante, sinon créer
+        left_p = next(
+            (p for p in event.participants if p.user_id == user.id and p.status == "left"), None
+        )
+        if left_p:
+            left_p.status = "pending"
+            left_p.joined_at = datetime.now(timezone.utc)
+        else:
+            new_p = EventParticipant(event_id=event.id, user_id=user.id, status="pending")
+            db.add(new_p)
+            event.participants.append(new_p)
+
+        # Notifier le créateur d'une nouvelle demande
+        from app.services.notifications import create_notification
+        await create_notification(
+            db,
+            user_id=event.creator_id,
+            type="join_request",
+            content=f"{user.first_name} veut rejoindre « {event.title} »",
+            actor_id=user.id,
+            related_id=str(event.id),
+        )
+
+        await db.commit()
+        return _build_response(event, current_user_id=user.id)
+
+    # ── MODE LIBRE (comportement par défaut) ────────────────────────
     # Vérifier la capacité avec un COUNT SQL (fiable sous le lock)
     count_result = await db.execute(
         select(func.count()).where(
@@ -624,3 +715,126 @@ async def leave_event(
     participant.status = "left"
     await db.commit()
     return _build_response(event, current_user_id=user.id)
+
+
+# ── VALIDATION MANUELLE DES PARTICIPANTS ─────────────────────────
+
+async def list_pending_requests(
+    db: AsyncSession, current_user: User, event_id: uuid.UUID
+) -> list[dict]:
+    """Liste les demandes en attente pour une sortie. Réservé au créateur (et admin)."""
+    event = await db.get(Event, event_id)
+    if not event or not event.is_active:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sortie introuvable")
+    if event.creator_id != current_user.id and not current_user.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Action réservée au créateur")
+
+    result = await db.execute(
+        select(EventParticipant)
+        .options(selectinload(EventParticipant.user))
+        .where(
+            EventParticipant.event_id == event_id,
+            EventParticipant.status == "pending",
+        )
+        .order_by(EventParticipant.joined_at.asc())
+    )
+    pendings = result.scalars().all()
+    return [
+        {
+            "id": str(p.user.id),
+            "first_name": p.user.first_name,
+            "username": p.user.username,
+            "avatar_url": p.user.avatar_url,
+            "is_verified": p.user.is_verified,
+            "requested_at": p.joined_at.isoformat(),
+        }
+        for p in pendings
+        if p.user is not None
+    ]
+
+
+async def approve_join_request(
+    db: AsyncSession, current_user: User, event_id: uuid.UUID, target_user_id: uuid.UUID
+) -> None:
+    """Le créateur accepte la demande de target_user_id pour event_id."""
+    event = await db.get(Event, event_id)
+    if not event or not event.is_active:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sortie introuvable")
+    if event.creator_id != current_user.id and not current_user.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Action réservée au créateur")
+
+    # Récupérer la demande pending
+    result = await db.execute(
+        select(EventParticipant).where(
+            EventParticipant.event_id == event_id,
+            EventParticipant.user_id == target_user_id,
+            EventParticipant.status == "pending",
+        )
+    )
+    pending = result.scalar_one_or_none()
+    if not pending:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Demande introuvable")
+
+    # Vérifier la capacité avant d'accepter
+    count_result = await db.execute(
+        select(func.count()).where(
+            EventParticipant.event_id == event_id,
+            EventParticipant.status == "joined",
+        )
+    )
+    if event.max_participants is not None and (count_result.scalar() or 0) >= event.max_participants:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Sortie complète : impossible d'accepter plus de participants",
+        )
+
+    pending.status = "joined"
+    pending.joined_at = datetime.now(timezone.utc)
+
+    # Notifier le demandeur de l'acceptation
+    from app.services.notifications import create_notification
+    await create_notification(
+        db,
+        user_id=target_user_id,
+        type="join_approved",
+        content=f"Ta demande pour rejoindre « {event.title} » a été acceptée",
+        actor_id=current_user.id,
+        related_id=str(event.id),
+    )
+    await db.commit()
+
+
+async def reject_join_request(
+    db: AsyncSession, current_user: User, event_id: uuid.UUID, target_user_id: uuid.UUID
+) -> None:
+    """Le créateur refuse la demande de target_user_id pour event_id."""
+    event = await db.get(Event, event_id)
+    if not event or not event.is_active:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sortie introuvable")
+    if event.creator_id != current_user.id and not current_user.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Action réservée au créateur")
+
+    result = await db.execute(
+        select(EventParticipant).where(
+            EventParticipant.event_id == event_id,
+            EventParticipant.user_id == target_user_id,
+            EventParticipant.status == "pending",
+        )
+    )
+    pending = result.scalar_one_or_none()
+    if not pending:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Demande introuvable")
+
+    pending.status = "rejected"
+
+    # Notifier discrètement le demandeur
+    from app.services.notifications import create_notification
+    await create_notification(
+        db,
+        user_id=target_user_id,
+        type="join_rejected",
+        content=f"Ta demande pour « {event.title} » n'a pas été retenue",
+        actor_id=current_user.id,
+        related_id=str(event.id),
+    )
+    await db.commit()

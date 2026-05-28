@@ -49,15 +49,15 @@ export default function BottomNav() {
     }
   }, [])
 
-  // Charger le nombre de messages non lus pour le badge Messages
+  // Charger le nombre de messages non lus (chats de groupe + DMs privés)
   useEffect(() => {
     function fetchUnread() {
-      api.get('/events/unread-counts')
-        .then(({ data }) => {
-          const total = Object.values(data).reduce((sum, n) => sum + n, 0)
-          setUnreadMessages(total)
-        })
-        .catch(() => {})
+      Promise.all([
+        api.get('/events/unread-counts').then(({ data }) => Object.values(data).reduce((s, n) => s + n, 0)).catch(() => 0),
+        api.get('/dm/unread-count').then(({ data }) => data.count || 0).catch(() => 0),
+      ]).then(([groupUnread, dmUnread]) => {
+        setUnreadMessages(groupUnread + dmUnread)
+      })
     }
     fetchUnread()
     const interval = setInterval(fetchUnread, 30000)

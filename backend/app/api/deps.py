@@ -63,7 +63,11 @@ async def get_current_user(
     if user.is_banned:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Compte suspendu",
+            detail={
+                "code": "account_suspended",
+                "message": "Ton compte a été suspendu.",
+                "contact_email": "support@nearly.app",
+            },
         )
 
     # Mettre à jour last_active_at (max 1 fois par minute pour éviter les écritures inutiles)

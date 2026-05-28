@@ -47,7 +47,7 @@ class User(Base):
     messages_sent: Mapped[list["Message"]] = relationship(back_populates="sender", cascade="all, delete-orphan")
     private_messages_sent: Mapped[list["PrivateMessage"]] = relationship(foreign_keys="PrivateMessage.sender_id", back_populates="sender", cascade="all, delete-orphan")
     private_messages_received: Mapped[list["PrivateMessage"]] = relationship(foreign_keys="PrivateMessage.receiver_id", back_populates="receiver", cascade="all, delete-orphan")
-    identity_verification: Mapped["IdentityVerification | None"] = relationship(foreign_keys="IdentityVerification.user_id", back_populates="user", uselist=False)
+    identity_verification: Mapped["IdentityVerification | None"] = relationship(foreign_keys="IdentityVerification.user_id", back_populates="user", uselist=False, cascade="all, delete-orphan", single_parent=True)
     reports_made: Mapped[list["Report"]] = relationship(foreign_keys="Report.reporter_id", back_populates="reporter", cascade="all, delete-orphan")
     badges_received: Mapped[list["UserBadge"]] = relationship(foreign_keys="UserBadge.receiver_id", back_populates="receiver", cascade="all, delete-orphan")
     photos: Mapped[list["UserPhoto"]] = relationship(back_populates="user", cascade="all, delete-orphan", order_by="UserPhoto.created_at.desc()")

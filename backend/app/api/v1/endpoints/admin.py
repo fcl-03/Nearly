@@ -177,13 +177,30 @@ async def unban_user(
     return MessageResponse(message=f"Utilisateur {user.email} débanni.")
 
 
+async def _get_original_admin_id(db: AsyncSession) -> uuid.UUID | None:
+    """Retourne l'ID de l'admin originel (le premier admin créé).
+    Seul lui peut promote / demote d'autres admins, pour empêcher un admin promu
+    de retirer les droits de l'admin originel."""
+    result = await db.execute(
+        select(User.id).where(User.is_admin.is_(True)).order_by(User.created_at.asc()).limit(1)
+    )
+    return result.scalar_one_or_none()
+
+
 @router.post("/users/{user_id}/promote", response_model=MessageResponse)
 async def promote_user(
     user_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_admin),
+    admin: User = Depends(get_current_admin),
 ):
-    """Passe un utilisateur en administrateur."""
+    """Passe un utilisateur en administrateur. Réservé à l'admin originel."""
+    original_admin_id = await _get_original_admin_id(db)
+    if admin.id != original_admin_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Seul l'administrateur originel peut promouvoir un utilisateur.",
+        )
+
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
@@ -200,9 +217,19 @@ async def demote_user(
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(get_current_admin),
 ):
-    """Retire les droits admin d'un utilisateur."""
-    if user_id == admin.id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Tu ne peux pas retirer tes propres droits admin")
+    """Retire les droits admin d'un utilisateur. Réservé à l'admin originel.
+    L'admin originel ne peut pas être démote (par lui-même ni par personne)."""
+    original_admin_id = await _get_original_admin_id(db)
+    if admin.id != original_admin_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Seul l'administrateur originel peut retirer les droits admin.",
+        )
+    if user_id == original_admin_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="L'administrateur originel ne peut pas être démote.",
+        )
 
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()

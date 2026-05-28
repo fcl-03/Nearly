@@ -173,7 +173,7 @@ export default function EventsPage() {
       if (userPos) {
         p.set('lat', userPos[0])
         p.set('lon', userPos[1])
-        p.set('radius_km', 25)
+        p.set('radius_km', 50)
       }
       const { data } = await api.get(`/events?${p}`)
       setEvents(data)
@@ -537,6 +537,7 @@ export default function EventsPage() {
               alignItems: 'center',
               padding: '48px 0',
               color: 'var(--text-tertiary)',
+              gridColumn: '1 / -1', // prend toute la largeur de la grille 2 colonnes en desktop
             }}
           >
             <span style={{ fontSize: 44, marginBottom: 12 }}>🌆</span>

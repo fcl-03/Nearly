@@ -13,11 +13,13 @@ export default function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '' })
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
+  const [bannedInfo, setBannedInfo] = useState(null) // { message, contact_email, help }
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
+    setBannedInfo(null)
     setLoading(true)
     try {
       await api.post('/auth/login', form)
@@ -25,11 +27,15 @@ export default function LoginPage() {
       navigate('/events')
     } catch (err) {
       const s = err.response?.status
-      setError(
-        s === 401 || s === 403
-          ? 'Email ou mot de passe incorrect.'
-          : 'Une erreur est survenue, réessaie.'
-      )
+      const detail = err.response?.data?.detail
+      // Compte suspendu : message dédié avec contact pour recours
+      if (s === 403 && typeof detail === 'object' && detail?.code === 'account_suspended') {
+        setBannedInfo(detail)
+      } else if (s === 401 || s === 403) {
+        setError('Email ou mot de passe incorrect.')
+      } else {
+        setError('Une erreur est survenue, réessaie.')
+      }
     } finally {
       setLoading(false)
     }
@@ -187,6 +193,41 @@ export default function LoginPage() {
                 }}
               >
                 ⚠ {error}
+              </div>
+            )}
+
+            {/* Compte suspendu : message dédié avec recours */}
+            {bannedInfo && (
+              <div
+                style={{
+                  background: 'rgba(255,80,80,0.08)',
+                  border: '1px solid rgba(255,80,80,0.3)',
+                  borderRadius: 14,
+                  padding: '16px 18px',
+                  fontSize: 14,
+                  color: 'var(--text)',
+                  fontFamily: 'DM Sans, sans-serif',
+                  lineHeight: 1.5,
+                }}
+              >
+                <p style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 15, margin: '0 0 8px', color: '#FF6B6B' }}>
+                  🚫 Compte suspendu
+                </p>
+                <p style={{ margin: '0 0 8px' }}>{bannedInfo.message}</p>
+                {bannedInfo.help && (
+                  <p style={{ margin: '0 0 10px', color: 'var(--text-secondary)' }}>{bannedInfo.help}</p>
+                )}
+                {bannedInfo.contact_email && (
+                  <a
+                    href={`mailto:${bannedInfo.contact_email}?subject=Demande de réexamen de mon compte&body=Bonjour,%0D%0A%0D%0AMon compte (${form.email}) a été suspendu et je souhaite contester cette décision.%0D%0A%0D%0AMerci de réexaminer mon dossier.%0D%0A`}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                      color: 'var(--accent-text, var(--accent))', textDecoration: 'underline', fontWeight: 600,
+                    }}
+                  >
+                    Contacter le support : {bannedInfo.contact_email}
+                  </a>
+                )}
               </div>
             )}
 

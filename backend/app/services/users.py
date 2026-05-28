@@ -150,10 +150,8 @@ async def search_users(
     if len(q) < 2:
         return []
 
-    # Exclure les utilisateurs bloqués (dans les deux sens)
-    blocked_by_me = select(Friendship.addressee_id).where(
-        Friendship.requester_id == current_user_id, Friendship.status == "blocked"
-    )
+    # On garde visibles les utilisateurs que J'AI bloqués (pour pouvoir les débloquer / signaler)
+    # mais on cache ceux qui M'ONT bloqué (ne pas révéler le blocage)
     blocked_me = select(Friendship.requester_id).where(
         Friendship.addressee_id == current_user_id, Friendship.status == "blocked"
     )
@@ -164,7 +162,6 @@ async def search_users(
             User.username.ilike(f"{q}%"),
             User.is_banned == False,  # noqa: E712
             User.id != current_user_id,
-            User.id.notin_(blocked_by_me),
             User.id.notin_(blocked_me),
         )
         .order_by(User.username)

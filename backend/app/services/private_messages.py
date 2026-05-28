@@ -14,15 +14,11 @@ from app.models.user import User
 async def send_dm(
     db: AsyncSession, sender: User, receiver_id: uuid.UUID, content: str
 ) -> PrivateMessage:
-    """Envoie un message privé (premium requis). Seuls les amis peuvent s'écrire."""
-    if not sender.is_premium and not sender.is_admin:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Fonctionnalité réservée aux membres Premium",
-        )
-
-    from app.services.friendships import get_friendship_status_for
-
+    """Envoie un message privé.
+    - Premium / admin : peut initier une conversation avec un ami.
+    - N'importe qui : peut toujours répondre à quelqu'un qui lui a déjà écrit
+      (admin contactant un user, ou réponse à un ancien échange).
+    """
     if sender.id == receiver_id:
         raise HTTPException(status_code=400, detail="Tu ne peux pas t'écrire à toi-même")
 
@@ -31,13 +27,29 @@ async def send_dm(
     if not receiver or receiver.is_banned:
         raise HTTPException(status_code=404, detail="Utilisateur introuvable")
 
-    # Vérifier que les deux utilisateurs sont amis
-    friendship_status = await get_friendship_status_for(db, sender.id, receiver_id)
-    if friendship_status != "friends":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Vous devez être amis pour échanger des messages privés",
-        )
+    # Exception : si l'autre user nous a déjà écrit, on peut répondre
+    # (peu importe premium / amitié) — sinon une conversation initiée par
+    # l'admin ne pourrait jamais avoir de réponse.
+    already_contacted_us = await db.execute(
+        select(PrivateMessage.id).where(
+            PrivateMessage.sender_id == receiver_id,
+            PrivateMessage.receiver_id == sender.id,
+        ).limit(1)
+    )
+    can_reply = already_contacted_us.scalar_one_or_none() is not None
+
+    if not can_reply:
+        # Initiation d'une conversation : il faut être amis (sauf si admin).
+        # Premium permettra d'écrire à des non-amis (cold messaging) — à implémenter
+        # quand premium sera activé (gratuit pour tous au MVP).
+        if not sender.is_admin:
+            from app.services.friendships import get_friendship_status_for
+            friendship_status = await get_friendship_status_for(db, sender.id, receiver_id)
+            if friendship_status != "friends":
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Vous devez être amis pour échanger des messages privés",
+                )
 
     # Valider la longueur du message
     content = content.strip()

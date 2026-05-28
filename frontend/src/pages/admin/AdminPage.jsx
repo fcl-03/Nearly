@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuthStore } from '../../stores/authStore'
 import { Navigate, useNavigate } from 'react-router-dom'
-import { CheckCircle, XCircle, Shield, Flag, Users, FileCheck, BarChart2, Calendar, Trash2 } from 'lucide-react'
+import { CheckCircle, XCircle, Shield, Flag, Users, FileCheck, BarChart2, Calendar, Trash2, Bug } from 'lucide-react'
 import api from '../../services/api'
 import Spinner from '../../components/ui/Spinner'
 
@@ -9,6 +9,7 @@ const TABS = [
   { key: 'stats',    label: 'Stats',         Icon: BarChart2 },
   { key: 'events',   label: 'Sorties',       Icon: Calendar },
   { key: 'reports',  label: 'Signalements',  Icon: Flag },
+  { key: 'bugs',     label: 'Bugs',          Icon: Bug },
   { key: 'verifs',   label: 'Vérifications', Icon: FileCheck },
   { key: 'users',    label: 'Utilisateurs',  Icon: Users },
 ]
@@ -58,6 +59,7 @@ export default function AdminPage() {
         {tab === 'stats'   && <StatsSection />}
         {tab === 'events'  && <EventsSection />}
         {tab === 'reports' && <ReportsSection />}
+        {tab === 'bugs'    && <BugReportsSection />}
         {tab === 'verifs'  && <VerificationsSection />}
         {tab === 'users'   && <UsersSection />}
       </div>
@@ -477,19 +479,210 @@ function UsersSection() {
   )
 }
 
+// ── Bug Reports ────────────────────────────────────────────────
+
+function BugReportsSection() {
+  const [bugs, setBugs] = useState(null)
+  const [filter, setFilter] = useState('') // '', 'open', 'in_progress', 'resolved', 'rejected'
+  const [actionId, setActionId] = useState(null)
+
+  const load = useCallback(async () => {
+    setBugs(null)
+    const url = filter ? `/admin/bug-reports?status_filter=${filter}` : '/admin/bug-reports'
+    const { data } = await api.get(url)
+    setBugs(data)
+  }, [filter])
+
+  useEffect(() => { load() }, [load])
+
+  async function updateStatus(id, newStatus) {
+    setActionId(id)
+    try {
+      await api.patch(`/admin/bug-reports/${id}`, { status: newStatus })
+      await load()
+    } catch {} finally { setActionId(null) }
+  }
+
+  async function deleteBug(id) {
+    if (!confirm('Supprimer définitivement ce bug report ?')) return
+    setActionId(id)
+    try {
+      await api.delete(`/admin/bug-reports/${id}`)
+      await load()
+    } catch {} finally { setActionId(null) }
+  }
+
+  if (bugs === null) return <Loader />
+
+  return (
+    <div>
+      {/* Filtres */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
+        {[['', 'Tous'], ['open', 'Ouverts'], ['in_progress', 'En cours'], ['resolved', 'Résolus'], ['rejected', 'Rejetés']].map(([k, label]) => (
+          <button
+            key={k || 'all'}
+            onClick={() => setFilter(k)}
+            style={{
+              padding: '5px 10px', borderRadius: 99, fontSize: 11, fontWeight: 700,
+              fontFamily: 'DM Sans, sans-serif', cursor: 'pointer',
+              background: filter === k ? 'var(--accent)' : 'var(--surface2)',
+              color: filter === k ? 'var(--bg)' : 'var(--text-secondary)',
+              border: '1px solid var(--border-color)',
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {bugs.length === 0 ? (
+        <p style={{ color: 'var(--text-tertiary)', fontSize: 13, padding: '24px 0', textAlign: 'center' }}>
+          Aucun bug report{filter ? ` avec le statut "${filter}"` : ''}.
+        </p>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {bugs.map(b => (
+            <BugReportCard
+              key={b.id}
+              bug={b}
+              loading={actionId === b.id}
+              onUpdateStatus={(s) => updateStatus(b.id, s)}
+              onDelete={() => deleteBug(b.id)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function BugReportCard({ bug, loading, onUpdateStatus, onDelete }) {
+  const statusColors = {
+    open: ['var(--orange)', 'Ouvert'],
+    in_progress: ['var(--accent)', 'En cours'],
+    resolved: ['var(--green)', 'Résolu'],
+    rejected: ['var(--text-tertiary)', 'Rejeté'],
+  }
+  const [color, label] = statusColors[bug.status] || ['var(--text-tertiary)', bug.status]
+  const date = new Date(bug.created_at).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+
+  return (
+    <div style={{ background: 'var(--surface2)', border: '1px solid var(--border-color)', borderRadius: 14, padding: 14 }}>
+      {/* En-tête : reporter + date + statut */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, gap: 8 }}>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <p style={{ fontSize: 13, fontWeight: 700, fontFamily: 'Syne, sans-serif', color: 'var(--text)', margin: 0 }}>
+            {bug.reporter?.first_name || 'Anonyme'}
+            {bug.reporter?.email && (
+              <span style={{ fontWeight: 400, fontSize: 11, color: 'var(--text-tertiary)', marginLeft: 6 }}>
+                {bug.reporter.email}
+              </span>
+            )}
+          </p>
+          <p style={{ fontSize: 11, color: 'var(--text-tertiary)', margin: '2px 0 0' }}>{date}</p>
+        </div>
+        <span style={{ fontSize: 11, fontWeight: 700, color, background: color + '20', borderRadius: 99, padding: '3px 8px', flexShrink: 0 }}>
+          {label}
+        </span>
+      </div>
+
+      {/* Message */}
+      <p style={{ fontSize: 14, color: 'var(--text)', margin: '0 0 10px', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+        {bug.message}
+      </p>
+
+      {/* Contexte technique */}
+      {(bug.page_url || bug.user_agent) && (
+        <div style={{ background: 'var(--surface1)', borderRadius: 8, padding: '8px 10px', marginBottom: 10, fontSize: 11, color: 'var(--text-tertiary)', fontFamily: 'monospace' }}>
+          {bug.page_url && <div>📍 {bug.page_url}</div>}
+          {bug.user_agent && <div style={{ marginTop: 4, wordBreak: 'break-all' }}>🌐 {bug.user_agent}</div>}
+        </div>
+      )}
+
+      {/* Actions */}
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        {bug.status !== 'in_progress' && (
+          <button onClick={() => onUpdateStatus('in_progress')} disabled={loading} style={actionBtn('var(--accent)', 'var(--bg)')}>
+            En cours
+          </button>
+        )}
+        {bug.status !== 'resolved' && (
+          <button onClick={() => onUpdateStatus('resolved')} disabled={loading} style={actionBtn('var(--green)', 'var(--bg)')}>
+            Résolu
+          </button>
+        )}
+        {bug.status !== 'rejected' && (
+          <button onClick={() => onUpdateStatus('rejected')} disabled={loading} style={actionBtn('var(--surface1)', 'var(--text-secondary)')}>
+            Rejeter
+          </button>
+        )}
+        <button onClick={onDelete} disabled={loading} style={{ ...actionBtn('transparent', 'var(--orange)'), border: '1px solid rgba(255,122,61,0.3)', marginLeft: 'auto' }}>
+          <Trash2 size={12} />
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── Composants utilitaires ─────────────────────────────────────
 
 function PhotoPreview({ url, label }) {
+  const [open, setOpen] = useState(false)
+
+  // Fermer la lightbox sur Escape
+  useEffect(() => {
+    if (!open) return
+    function onKey(e) { if (e.key === 'Escape') setOpen(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
+
   if (!url) return (
     <div style={{ flex: 1, height: 100, borderRadius: 10, border: '1px dashed var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <p style={{ fontSize: 10, color: 'var(--text-tertiary)', textAlign: 'center' }}>Non fourni</p>
     </div>
   )
+
   return (
-    <a href={url} target="_blank" rel="noreferrer" style={{ flex: 1 }}>
-      <img src={url} alt={label} style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 10, border: '1px solid var(--border-color)' }} />
-      <p style={{ fontSize: 10, color: 'var(--text-tertiary)', textAlign: 'center', marginTop: 4 }}>{label}</p>
-    </a>
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        style={{ flex: 1, background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'center' }}
+      >
+        <img src={url} alt={label} style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 10, border: '1px solid var(--border-color)' }} />
+        <p style={{ fontSize: 10, color: 'var(--text-tertiary)', marginTop: 4 }}>{label}</p>
+      </button>
+
+      {open && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setOpen(false)}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', zIndex: 9999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, cursor: 'zoom-out',
+          }}
+        >
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setOpen(false) }}
+            aria-label="Fermer"
+            style={{
+              position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,0.1)', color: '#fff',
+              border: 'none', borderRadius: '50%', width: 40, height: 40, fontSize: 22, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >×</button>
+          <img
+            src={url}
+            alt={label}
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: '100%', maxHeight: '90vh', objectFit: 'contain', borderRadius: 8, cursor: 'default' }}
+          />
+        </div>
+      )}
+    </>
   )
 }
 

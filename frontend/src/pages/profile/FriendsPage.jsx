@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { UserCheck, UserX, Search, UserPlus } from 'lucide-react'
+import { UserCheck, UserX, Search, UserPlus, UserMinus, Flag } from 'lucide-react'
 import api from '../../services/api'
 import Spinner from '../../components/ui/Spinner'
 
@@ -78,6 +78,25 @@ export default function FriendsPage() {
       setAddError(detail || 'Erreur lors de l\'envoi de la demande.')
     }
     finally { setAddLoading(null) }
+  }
+
+  async function handleUnblock(userId) {
+    setAddLoading(userId)
+    try {
+      await api.delete(`/users/${userId}/block`)
+      setSearchResults(prev => prev.map(u => u.id === userId ? { ...u, friendship_status: 'none' } : u))
+    } catch {}
+    finally { setAddLoading(null) }
+  }
+
+  async function handleReport(userId) {
+    if (!confirm('Signaler cet utilisateur ?')) return
+    try {
+      await api.post('/reports', { reported_user_id: userId, reason: 'Signalement depuis liste bloqués' })
+      alert('Signalement envoyé.')
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Erreur lors du signalement.')
+    }
   }
 
   const loading = requests === null || friends === null
@@ -170,6 +189,8 @@ export default function FriendsPage() {
                       loading={addLoading === u.id}
                       onVisit={() => navigate(`/users/${u.id}`)}
                       onAdd={() => handleAdd(u.id)}
+                      onUnblock={() => handleUnblock(u.id)}
+                      onReport={() => handleReport(u.id)}
                     />
                   ))}
                 </div>
@@ -218,8 +239,65 @@ export default function FriendsPage() {
   )
 }
 
-// Résultat de recherche avec bouton "Ajouter"
-function SearchResultCard({ user, loading, onVisit, onAdd }) {
+// Résultat de recherche avec bouton "Ajouter" — ou "Débloquer" / "Signaler" si bloqué
+function SearchResultCard({ user, loading, onVisit, onAdd, onUnblock, onReport }) {
+  const isBlocked = user.friendship_status === 'blocked'
+
+  // Cas bloqué : on n'affiche ni avatar ni accès au profil, juste nom + actions
+  if (isBlocked) {
+    return (
+      <div style={{
+        background: 'var(--surface2)',
+        border: '1px solid var(--border-color)',
+        borderRadius: 18,
+        padding: '14px 16px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        opacity: 0.75,
+      }}>
+        {/* Pastille générique à la place de l'avatar */}
+        <div style={{
+          width: 48, height: 48, borderRadius: '50%', background: 'var(--surface1)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          color: 'var(--text-tertiary)', fontSize: 18,
+        }}>🚫</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 14, color: 'var(--text-secondary)', margin: 0 }}>
+            {user.first_name}
+          </p>
+          <p style={{ fontSize: 11, color: 'var(--text-tertiary)', margin: '2px 0 0', fontStyle: 'italic' }}>Utilisateur bloqué</p>
+        </div>
+        <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+          <button
+            onClick={onUnblock}
+            disabled={loading}
+            title="Débloquer"
+            style={{
+              background: 'var(--surface1)', color: 'var(--text)', border: '1px solid var(--border-color)',
+              borderRadius: 10, padding: '8px 12px', fontSize: 12, fontWeight: 600, fontFamily: 'DM Sans, sans-serif',
+              cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1,
+              display: 'flex', alignItems: 'center', gap: 5,
+            }}
+          >
+            <UserMinus size={13} /> Débloquer
+          </button>
+          <button
+            onClick={onReport}
+            title="Signaler"
+            style={{
+              background: 'transparent', color: 'var(--orange, #FF7A3D)', border: '1px solid rgba(255,122,61,0.3)',
+              borderRadius: 10, padding: '8px 10px', cursor: 'pointer',
+              display: 'flex', alignItems: 'center',
+            }}
+          >
+            <Flag size={13} />
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div style={{
       background: 'var(--surface2)',

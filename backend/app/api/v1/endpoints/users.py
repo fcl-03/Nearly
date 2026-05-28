@@ -145,18 +145,23 @@ async def search_users_endpoint(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Recherche d'utilisateurs par @username (min 2 caractères)."""
+    """Recherche d'utilisateurs par @username (min 2 caractères).
+    Renvoie aussi `friendship_status` pour pouvoir afficher l'état "blocked"
+    et proposer le débloquage côté UI."""
+    from app.services.friendships import get_friendship_status_for
     users = await search_users(db, q, current_user.id)
-    return [
-        {
+    results = []
+    for u in users:
+        status = await get_friendship_status_for(db, current_user.id, u.id)
+        results.append({
             "id": str(u.id),
             "first_name": u.first_name,
             "username": u.username,
             "avatar_url": u.avatar_url,
             "is_verified": u.is_verified,
-        }
-        for u in users
-    ]
+            "friendship_status": status,
+        })
+    return results
 
 
 @router.get("/{user_id}", response_model=PublicUserProfile)

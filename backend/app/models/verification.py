@@ -25,8 +25,8 @@ class IdentityVerification(Base):
     selfie_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     id_card_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
-    # Admin qui a effectué la revue
-    reviewed_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    # Admin qui a effectué la revue (SET NULL si l'admin supprime son compte)
+    reviewed_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)

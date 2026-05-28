@@ -35,6 +35,7 @@ class EventCreate(BaseModel):
     longitude: float
     starts_at: datetime
     max_participants: int | None = None
+    requires_approval: bool = False
 
     @field_validator("title")
     @classmethod
@@ -172,12 +173,14 @@ class EventResponse(BaseModel):
     max_participants: int | None
     is_sponsored: bool
     is_active: bool
+    requires_approval: bool = False
     created_at: datetime
     creator: CreatorInfo
     participants_count: int
     participants: list[ParticipantInfo] = []
     is_full: bool
-    is_joined: bool  # True si l'utilisateur courant a rejoint
+    is_joined: bool  # True si l'utilisateur courant a rejoint (status="joined")
+    join_status: str | None = None  # "joined" | "pending" | "rejected" | None — état précis du user courant
     distance_km: float | None = None  # Rempli si lat/lon fournis dans la recherche
     last_message_at: datetime | None = None  # Date du dernier message dans le chat
     deletion_poll: DeletionPollInfo | None = None  # Vote de suppression en cours
