@@ -356,9 +356,11 @@ async def join_event(
         )
 
     # ── MODE VALIDATION MANUELLE ────────────────────────────────────
-    # Si la sortie requiert validation et que ce n'est pas le créateur (ni un admin),
+    # Si la sortie requiert validation et que ce n'est pas le créateur lui-même,
     # on crée la participation en "pending" et on notifie le créateur.
-    needs_approval = event.requires_approval and user.id != event.creator_id and not user.is_admin
+    # L'admin doit aussi passer par la validation : son rôle est la modération,
+    # pas le contournement des règles du créateur.
+    needs_approval = event.requires_approval and user.id != event.creator_id
     if needs_approval:
         existing_pending = next(
             (p for p in event.participants if p.user_id == user.id and p.status == "pending"), None
