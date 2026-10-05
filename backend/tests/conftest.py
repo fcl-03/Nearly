@@ -6,8 +6,10 @@ import asyncio
 import os
 
 # ─── Override de config AVANT l'import de l'app ────────────────────────────
-os.environ["DATABASE_URL"] = "postgresql+asyncpg://nearly:nearly_dev@localhost:5432/nearly_test"
-os.environ["REDIS_URL"] = "redis://:nearly_dev@localhost:6379/1"  # DB Redis 1 = tests
+# setdefault : surchargeable en CI (ex. Redis sans mot de passe) ; valeurs par
+# défaut = conteneurs Docker locaux (docker-compose).
+os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://nearly:nearly_dev@localhost:5432/nearly_test")
+os.environ.setdefault("REDIS_URL", "redis://:nearly_dev@localhost:6379/1")  # DB Redis 1 = tests
 os.environ["RESEND_API_KEY"] = ""
 os.environ["S3_ENDPOINT_URL"] = ""
 os.environ["SECRET_KEY"] = "test-secret-key-not-for-production"

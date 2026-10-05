@@ -12,6 +12,29 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    services:
+      postgres:
+        image: postgis/postgis:15-3.4
+        env:
+          POSTGRES_USER: nearly
+          POSTGRES_PASSWORD: nearly_dev
+          POSTGRES_DB: nearly_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U nearly"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
     steps:
       - uses: actions/checkout@v4
 
@@ -30,7 +53,10 @@ jobs:
         run: python -m ruff check .
 
       - name: Run tests
-        run: python -m pytest --tb=short -q || true
+        env:
+          # Redis de la CI sans mot de passe (surcharge le défaut local)
+          REDIS_URL: redis://localhost:6379/1
+        run: python -m pytest --tb=short -q
 
   frontend:
     runs-on: ubuntu-latest
