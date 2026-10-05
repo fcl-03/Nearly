@@ -6,6 +6,7 @@ import L from 'leaflet'
 import api from '../../services/api'
 import { CATEGORIES } from '../../utils/categories'
 import { useThemeStore } from '../../stores/themeStore'
+import { getTileUrl } from '../../utils/mapTiles'
 
 // Recherche de lieux via TomTom Fuzzy Search — POI propriétaire, fuzzy natif, biais géo
 const TOMTOM_KEY = import.meta.env.VITE_TOMTOM_KEY
@@ -43,9 +44,7 @@ export default function CreateEventPage() {
   const navigate = useNavigate()
   const geocodeTimer = useRef(null)
   const { theme } = useThemeStore()
-  const tileUrl = theme === 'light'
-    ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+  const tileUrl = getTileUrl(theme)
 
   const [form, setForm] = useState({
     title: '',
@@ -609,7 +608,7 @@ export default function CreateEventPage() {
           {/* Nombre de participants — masqué en mode "Ouvert" */}
           {form.event_type === 'small_group' && (
             <div>
-              <FieldLabel>Taille du groupe (3–6 personnes)</FieldLabel>
+              <FieldLabel>Taille du groupe (2–6 personnes)</FieldLabel>
               <div
                 style={{
                   display: 'flex',
@@ -624,13 +623,13 @@ export default function CreateEventPage() {
               >
                 <button
                   type="button"
-                  onClick={() => set('max_participants', Math.max(3, form.max_participants - 1))}
-                  disabled={form.max_participants <= 3}
+                  onClick={() => set('max_participants', Math.max(2, form.max_participants - 1))}
+                  disabled={form.max_participants <= 2}
                   style={{
                     width: 40, height: 40, borderRadius: '50%',
                     background: 'var(--surface3)', border: '1px solid var(--border-color)',
-                    color: form.max_participants <= 3 ? 'var(--text-tertiary)' : 'var(--text)',
-                    cursor: form.max_participants <= 3 ? 'not-allowed' : 'pointer',
+                    color: form.max_participants <= 2 ? 'var(--text-tertiary)' : 'var(--text)',
+                    cursor: form.max_participants <= 2 ? 'not-allowed' : 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}
                 >

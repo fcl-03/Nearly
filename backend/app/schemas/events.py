@@ -92,8 +92,8 @@ class EventCreate(BaseModel):
         if self.event_type == "small_group":
             if self.max_participants is None:
                 raise ValueError("max_participants est requis pour une sortie en petit groupe")
-            if not (3 <= self.max_participants <= 6):
-                raise ValueError("Une sortie en petit groupe doit avoir entre 3 et 6 participants")
+            if not (2 <= self.max_participants <= 6):
+                raise ValueError("Une sortie en petit groupe doit avoir entre 2 et 6 participants")
         return self
 
 

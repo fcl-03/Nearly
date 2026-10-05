@@ -119,6 +119,27 @@ async def _truncate_all():
     await engine.dispose()
 
 
+# Tables liées aux events, vidées entre chaque test.
+# But précis : empêcher l'accumulation d'events qui déclenche les limites
+# anti-spam (« 2 sorties actives max ») et fausse les tests suivants.
+# On NE touche PAS aux comptes business ni aux ads : ces suites sont écrites
+# en mode séquentiel (un test crée, les suivants réutilisent).
+# CASCADE propage aux tables filles (business_sponsored_events, etc.).
+_TRANSACTIONAL_TABLES = (
+    "events, event_participants, messages, "
+    "event_deletion_polls, event_read_receipts"
+)
+
+
+async def _truncate_transactional():
+    """Réinitialise les données transactionnelles entre deux tests (préserve les users)."""
+    engine = create_async_engine(TEST_DATABASE_URL)
+    async with async_sessionmaker(engine)() as db:
+        await db.execute(text(f"TRUNCATE {_TRANSACTIONAL_TABLES} RESTART IDENTITY CASCADE"))
+        await db.commit()
+    await engine.dispose()
+
+
 # ─── Client HTTP ─────────────────────────────────────────────────────────────
 
 @pytest.fixture(scope="session")
@@ -166,6 +187,19 @@ def clear_cookies(client):
     client.cookies.clear()
     yield
     client.cookies.clear()
+
+
+# ─── Isolation de la DB entre chaque test ─────────────────────────────────────
+
+@pytest.fixture(autouse=True)
+def reset_transactional_tables():
+    """
+    Vide les données créées par un test avant de passer au suivant.
+    Sans ça, les events s'accumulent et déclenchent les limites anti-spam
+    (ex. « 2 sorties actives max ») → 403 inattendus dans les tests suivants.
+    """
+    yield
+    asyncio.run(_truncate_transactional())
 
 
 # ─── Headers helpers ──────────────────────────────────────────────────────────

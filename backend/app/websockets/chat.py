@@ -43,6 +43,14 @@ async def _authenticate_ws(
     return user
 
 
+async def _is_user_banned(db: AsyncSession, user_id: uuid.UUID) -> bool:
+    """Relit is_banned directement en SQL — db.get() renverrait l'objet caché par
+    l'identity map de la session (jamais re-requêté), donc un ban en cours de
+    connexion ne serait jamais vu."""
+    result = await db.execute(select(User.is_banned).where(User.id == user_id))
+    return bool(result.scalar())
+
+
 async def _assert_ws_participant(
     db: AsyncSession, event_id: uuid.UUID, user_id: uuid.UUID
 ) -> bool:
@@ -122,6 +130,12 @@ async def chat_endpoint(
                     })
                     continue
 
+                # Re-vérifier le ban AVANT d'accepter le message : un client malveillant
+                # peut ne jamais envoyer de ping (seul endroit où c'était contrôlé).
+                if await _is_user_banned(db, user.id):
+                    await websocket.close(code=4001, reason="Compte suspendu")
+                    break
+
                 # Sauvegarder en DB
                 msg = await save_message(db, event_id, user.id, content)
                 msg.sender = user  # Charger le sender en mémoire pour la sérialisation
@@ -139,8 +153,7 @@ async def chat_endpoint(
                     await websocket.close(code=4001, reason="Session expirée")
                     break
                 # Vérifier que l'utilisateur n'est pas banni
-                refreshed = await db.get(User, user.id)
-                if refreshed and refreshed.is_banned:
+                if await _is_user_banned(db, user.id):
                     await websocket.close(code=4001, reason="Compte suspendu")
                     break
                 await websocket.send_json({"type": "pong"})

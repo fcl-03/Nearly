@@ -28,3 +28,24 @@ async def is_token_banned(jti: str) -> bool:
     """Vérifie si un token a été révoqué."""
     result = await _redis_client.get(f"banned_token:{jti}")
     return result is not None
+
+
+# ── Index des refresh tokens par utilisateur ──────────────────────────────────
+# Permet de révoquer TOUTES les sessions d'un user (reset/changement de mot de
+# passe, bannissement) sans scanner Redis.
+
+async def track_refresh_token(user_id: str, jti: str, ttl_seconds: int) -> None:
+    """Associe un refresh jti à son utilisateur pour pouvoir le révoquer en masse."""
+    key = f"user_refresh:{user_id}"
+    await _redis_client.sadd(key, jti)
+    # Le set vit aussi longtemps que le refresh le plus récent
+    await _redis_client.expire(key, ttl_seconds)
+
+
+async def revoke_user_refresh_tokens(user_id: str) -> None:
+    """Révoque tous les refresh tokens actifs d'un utilisateur."""
+    key = f"user_refresh:{user_id}"
+    jtis = await _redis_client.smembers(key)
+    if jtis:
+        await _redis_client.delete(*[f"refresh:{jti}" for jti in jtis])
+    await _redis_client.delete(key)

@@ -107,7 +107,6 @@ async def seed():
             city="Troyes",
             phone="03 25 00 00 00",
             plan="starter",
-            sponsored_events_limit=3,
         )
         db.add(biz)
 

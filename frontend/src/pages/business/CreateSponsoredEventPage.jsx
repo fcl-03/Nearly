@@ -6,6 +6,7 @@ import L from 'leaflet'
 import api from '../../services/api'
 import { CATEGORIES } from '../../utils/categories'
 import { useThemeStore } from '../../stores/themeStore'
+import { getTileUrl } from '../../utils/mapTiles'
 
 const TOMTOM_KEY = import.meta.env.VITE_TOMTOM_KEY
 
@@ -40,15 +41,14 @@ L.Icon.Default.mergeOptions({
 export default function CreateSponsoredEventPage() {
   const navigate = useNavigate()
   const { theme } = useThemeStore()
-  const tileUrl = theme === 'light'
-    ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+  const tileUrl = getTileUrl(theme)
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState('')
-  const [eventType, setEventType] = useState('open')
-  const [maxP, setMaxP] = useState(6)
+  // Sortie sponsorisée = toujours "open" sans limite (promo pure pour le commerce)
+  const eventType = 'open'
+  const maxP = null
   const [locationName, setLocationName] = useState('')
   const [lat, setLat] = useState(null)
   const [lon, setLon] = useState(null)
@@ -181,46 +181,20 @@ export default function CreateSponsoredEventPage() {
           </div>
         </div>
 
-        {/* Type */}
-        <div>
-          <label style={labelStyle}>Type de sortie</label>
-          <div style={{ display: 'flex', gap: 10 }}>
-            {[
-              { key: 'open', label: 'Ouverte (illimité)' },
-              { key: 'small_group', label: 'Petit groupe (3-6)' },
-            ].map(t => (
-              <button
-                key={t.key} type="button"
-                onClick={() => setEventType(t.key)}
-                style={{
-                  flex: 1,
-                  background: eventType === t.key ? 'var(--accent)' : 'var(--surface2)',
-                  color: eventType === t.key ? 'var(--on-accent)' : 'var(--text-secondary)',
-                  border: 'none', borderRadius: 11, padding: '12px',
-                  fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                  fontFamily: 'DM Sans, sans-serif',
-                }}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
+        {/* Note : sortie sponsorisée = toujours ouverte, sans limite de participants.
+            C'est de la promo pure pour faire venir un maximum de clients. */}
+        <div style={{
+          background: 'rgba(232,255,71,0.06)',
+          border: '1px solid rgba(232,255,71,0.2)',
+          borderRadius: 11,
+          padding: '10px 14px',
+          fontSize: 12,
+          color: 'var(--text-secondary)',
+          fontFamily: 'DM Sans, sans-serif',
+          lineHeight: 1.5,
+        }}>
+          ✦ Sortie sponsorisée : ouverte à tous, sans limite de participants. Tu fais venir du monde dans ton établissement.
         </div>
-
-        {/* Max participants (petit groupe) */}
-        {eventType === 'small_group' && (
-          <div>
-            <label style={labelStyle}>Participants max</label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              <input
-                type="range" min={3} max={6} value={maxP}
-                onChange={e => setMaxP(Number(e.target.value))}
-                style={{ flex: 1, accentColor: 'var(--accent)' }}
-              />
-              <span style={{ fontWeight: 700, fontSize: 18, color: 'var(--accent)', minWidth: 24, textAlign: 'center' }}>{maxP}</span>
-            </div>
-          </div>
-        )}
 
         {/* Lieu */}
         <div style={{ position: 'relative' }}>

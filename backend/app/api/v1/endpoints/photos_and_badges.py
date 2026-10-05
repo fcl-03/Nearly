@@ -30,6 +30,13 @@ router = APIRouter()
 
 # ── Photos ──
 
+async def _reject_if_blocked(db: AsyncSession, viewer_id: uuid.UUID, target_id: uuid.UUID) -> None:
+    """404 si un blocage existe entre les deux — même politique que le profil public."""
+    from app.services.friendships import is_blocked
+    if await is_blocked(db, viewer_id, target_id):
+        raise HTTPException(status_code=404, detail="Utilisateur introuvable")
+
+
 @router.get("/users/{user_id}/photos", response_model=list[PhotoOut])
 async def list_user_photos(
     user_id: uuid.UUID,
@@ -37,6 +44,7 @@ async def list_user_photos(
     current_user: User = Depends(get_current_user),
 ):
     """Photos de profil publiques d'un utilisateur avec likes."""
+    await _reject_if_blocked(db, current_user.id, user_id)
     photos = await get_user_photos(db, user_id, viewer_id=current_user.id)
     return [PhotoOut(**p) for p in photos]
 
@@ -117,6 +125,7 @@ async def get_badges(
     current_user: User = Depends(get_current_user),
 ):
     """Résumé des badges reçus par un utilisateur."""
+    await _reject_if_blocked(db, current_user.id, user_id)
     return await get_user_badges_summary(db, user_id)
 
 
@@ -148,9 +157,10 @@ async def give_badge_to_user(
 async def get_achievements(
     user_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Succès automatiques obtenus par un utilisateur."""
+    await _reject_if_blocked(db, current_user.id, user_id)
     return await get_user_achievements(db, user_id)
 
 

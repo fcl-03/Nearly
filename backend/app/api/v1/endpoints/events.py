@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, File, Query, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_current_user_optional, get_current_verified_user
@@ -22,6 +22,8 @@ from app.services.events import (
     create_event,
     delete_event,
     get_event,
+    get_event_souvenir,
+    get_my_events_history,
     get_unread_counts,
     join_event,
     leave_event,
@@ -29,7 +31,9 @@ from app.services.events import (
     list_pending_requests,
     mark_event_read,
     reject_join_request,
+    remove_event_cover,
     request_deletion,
+    set_event_cover,
     update_event,
     vote_deletion,
 )
@@ -149,6 +153,16 @@ async def list_joined_events(
 
     responses.sort(key=sort_key, reverse=True)
     return responses
+
+
+@router.get("/me/history", response_model=list[dict])
+async def my_events_history(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Historique permanent des sorties rejointes (passées comprises) avec photo souvenir.
+    Sert à alimenter la section « sorties récentes » du profil."""
+    return await get_my_events_history(db, current_user.id)
 
 
 @router.get("/unread-counts", response_model=dict[str, int])
@@ -373,3 +387,39 @@ async def invite_friends(
         await db.commit()
 
     return {"invited": invited}
+
+
+@router.get("/{event_id}/souvenir", response_model=dict)
+async def event_souvenir(
+    event_id: uuid.UUID,
+    owner_id: uuid.UUID | None = None,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Récap d'une sortie passée (souvenir), même désactivée : infos + participants + photo.
+    `owner_id` = propriétaire du profil consulté (pour afficher SA photo de couverture)."""
+    return await get_event_souvenir(db, current_user, event_id, owner_id)
+
+
+@router.post("/{event_id}/cover", response_model=dict)
+async def upload_event_cover(
+    event_id: uuid.UUID,
+    cover: UploadFile = File(..., description="Photo souvenir (JPEG, PNG ou WebP, max 8 Mo)"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Ajoute / remplace la photo souvenir personnelle du participant pour une sortie."""
+    file_bytes = await cover.read()
+    url = await set_event_cover(db, current_user, event_id, file_bytes, cover.content_type or "")
+    return {"cover_url": url}
+
+
+@router.delete("/{event_id}/cover", response_model=MessageResponse)
+async def delete_event_cover(
+    event_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Retire la photo souvenir personnelle du participant pour une sortie."""
+    await remove_event_cover(db, current_user, event_id)
+    return MessageResponse(message="Photo souvenir supprimée")

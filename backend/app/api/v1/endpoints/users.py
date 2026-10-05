@@ -97,13 +97,80 @@ async def delete_my_account(
     current_user: User = Depends(get_current_user),
     redis=Depends(get_redis),
 ):
-    """Supprime définitivement le compte de l'utilisateur connecté."""
+    """Supprime définitivement le compte de l'utilisateur connecté.
+    RGPD : efface aussi tous les fichiers S3 (avatar, photos, souvenirs, documents
+    d'identité en attente) et résilie l'abonnement Stripe — la suppression DB seule
+    laisserait des données personnelles orphelines et une facturation active."""
+    import logging
+
+    from app.core.config import settings
+    from app.models.photo import UserPhoto
+    from app.models.verification import IdentityVerification
     from app.services.auth import logout_user
-    # Extraire le token depuis le cookie httpOnly (même source que get_current_user)
+    from app.services.storage import (
+        avatar_key,
+        cover_key,
+        delete_private_file,
+        delete_public_file,
+        photo_key,
+    )
+
+    logger = logging.getLogger(__name__)
+    user_id_str = str(current_user.id)
+
+    # ── Fichiers S3 publics : avatar, photos de galerie, photos souvenir ──
+    if current_user.avatar_url:
+        await delete_public_file(avatar_key(user_id_str))
+
+    photos_result = await db.execute(
+        select(UserPhoto.id).where(UserPhoto.user_id == current_user.id)
+    )
+    for (photo_id,) in photos_result.all():
+        await delete_public_file(photo_key(user_id_str, str(photo_id)))
+
+    covers_result = await db.execute(
+        select(EventParticipant.event_id).where(
+            EventParticipant.user_id == current_user.id,
+            EventParticipant.cover_url.isnot(None),
+        )
+    )
+    for (event_id,) in covers_result.all():
+        await delete_public_file(cover_key(user_id_str, str(event_id)))
+
+    # ── Bucket privé : selfie + pièce d'identité d'une vérification en attente ──
+    verif_result = await db.execute(
+        select(IdentityVerification).where(IdentityVerification.user_id == current_user.id)
+    )
+    verification = verif_result.scalar_one_or_none()
+    if verification:
+        if verification.selfie_url:
+            await delete_private_file(verification.selfie_url)
+        if verification.id_card_url:
+            await delete_private_file(verification.id_card_url)
+
+    # ── Stripe : résilier les abonnements actifs (sinon la carte reste débitée
+    #    alors que le webhook ne retrouvera plus le user). Best effort. ──
+    if current_user.stripe_customer_id and settings.STRIPE_SECRET_KEY:
+        try:
+            import stripe
+            client = stripe.StripeClient(settings.STRIPE_SECRET_KEY)
+            subs = client.subscriptions.list(
+                params={"customer": current_user.stripe_customer_id, "status": "active"}
+            )
+            for sub in subs.data:
+                client.subscriptions.cancel(sub.id)
+        except Exception as exc:
+            # Ne jamais bloquer la suppression du compte pour un échec Stripe
+            logger.error("Échec résiliation Stripe pour %s : %s", user_id_str, exc)
+
+    # ── Sessions : révoquer le refresh courant + tous les autres ──
     access_token = request.cookies.get("access_token")
     refresh_token = request.cookies.get("refresh_token")
-    if access_token:
+    if access_token or refresh_token:
         await logout_user(redis, access_token, refresh_token)
+    from app.core.redis import revoke_user_refresh_tokens
+    await revoke_user_refresh_tokens(user_id_str)
+
     await db.delete(current_user)
     await db.commit()
     # Effacer les cookies d'authentification
@@ -139,13 +206,27 @@ async def list_all_interests(db: AsyncSession = Depends(get_db)):
     return await get_all_interests(db)
 
 
+def _user_card(u: User, friendship_status: str) -> dict:
+    """Sérialise un User en carte légère pour les listes (recherche, suggestions)."""
+    return {
+        "id": str(u.id),
+        "first_name": u.first_name,
+        "username": u.username,
+        "avatar_url": u.avatar_url,
+        "city": u.city,
+        "is_verified": u.is_verified,
+        "last_active_at": u.last_active_at.isoformat() if u.last_active_at else None,
+        "friendship_status": friendship_status,
+    }
+
+
 @router.get("/search", response_model=list[dict])
 async def search_users_endpoint(
     q: str,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Recherche d'utilisateurs par @username (min 2 caractères).
+    """Recherche d'utilisateurs par @username ou prénom (min 2 caractères).
     Renvoie aussi `friendship_status` pour pouvoir afficher l'état "blocked"
     et proposer le débloquage côté UI."""
     from app.services.friendships import get_friendship_status_for
@@ -153,15 +234,36 @@ async def search_users_endpoint(
     results = []
     for u in users:
         status = await get_friendship_status_for(db, current_user.id, u.id)
-        results.append({
-            "id": str(u.id),
-            "first_name": u.first_name,
-            "username": u.username,
-            "avatar_url": u.avatar_url,
-            "is_verified": u.is_verified,
-            "friendship_status": status,
-        })
+        results.append(_user_card(u, status))
     return results
+
+
+@router.get("/me/suggestions", response_model=list[dict])
+async def suggestions_endpoint(
+    limit: int = 30,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Suggestions d'amis : utilisateurs vérifiés de la même ville, hors relations existantes."""
+    from app.services.users import get_friend_suggestions
+    users = await get_friend_suggestions(db, current_user, limit=min(limit, 50))
+    return [_user_card(u, "none") for u in users]
+
+
+@router.get("/{user_id}/events-history", response_model=list[dict])
+async def user_events_history(
+    user_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Historique public des sorties rejointes par un utilisateur (souvenirs, avec sa photo).
+    Sécurité : ne renvoie QUE les sorties passées — jamais où la personne sera."""
+    from app.services.friendships import is_blocked
+    if await is_blocked(db, current_user.id, user_id):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Utilisateur introuvable")
+    from app.services.events import get_my_events_history
+    return await get_my_events_history(db, user_id, only_past=True)
 
 
 @router.get("/{user_id}", response_model=PublicUserProfile)

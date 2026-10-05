@@ -10,6 +10,7 @@ export default function EventCard({ event, onUpdate }) {
     ? event.max_participants - event.participants_count
     : null
   const isPremiumCreator = event.creator?.is_premium
+  const isSponsored = event.is_sponsored
 
   // Couleur des places restantes selon disponibilité
   const spotsColor = event.is_full
@@ -27,10 +28,14 @@ export default function EventCard({ event, onUpdate }) {
       style={{
         width: '100%',
         textAlign: 'left',
-        background: isPremiumCreator
+        background: isSponsored
+          ? 'linear-gradient(135deg, rgba(61,191,255,0.08) 0%, var(--surface) 60%)'
+          : isPremiumCreator
           ? 'linear-gradient(135deg, var(--premium-bg) 0%, var(--surface) 60%)'
           : 'var(--surface)',
-        border: `1px solid ${cat.color}35`,
+        border: isSponsored
+          ? '1px solid rgba(61,191,255,0.5)'
+          : `1px solid ${cat.color}35`,
         borderTop: `1px solid rgba(255,255,255,0.08)`,
         borderRadius: 20,
         padding: '14px 16px',
@@ -40,11 +45,19 @@ export default function EventCard({ event, onUpdate }) {
         cursor: 'pointer',
         position: 'relative',
         zIndex: 1,
-        boxShadow: `0 0 0 1px ${cat.color}12, 0 8px 32px rgba(0,0,0,0.5), 0 0 24px ${cat.color}08`,
+        boxShadow: isSponsored
+          ? '0 0 0 1px rgba(61,191,255,0.15), 0 8px 32px rgba(0,0,0,0.5), 0 0 24px rgba(61,191,255,0.15)'
+          : `0 0 0 1px ${cat.color}12, 0 8px 32px rgba(0,0,0,0.5), 0 0 24px ${cat.color}08`,
       }}
     >
-      {/* Badge Premium en haut de la carte */}
-      {isPremiumCreator && (
+      {/* Badge Partenaire (commerce sponsorisé) — prioritaire sur Premium */}
+      {isSponsored ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: -4 }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue, #3DBFFF)', fontFamily: 'Syne, sans-serif', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            ✦ Partenaire
+          </span>
+        </div>
+      ) : isPremiumCreator && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: -4 }}>
           <span style={{ fontSize: 10, fontWeight: 700, color: '#FFB800', fontFamily: 'Syne, sans-serif', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
             ⭐ Sortie Premium

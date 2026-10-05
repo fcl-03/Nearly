@@ -96,10 +96,18 @@ async def upload_photo(
 
     # Ajouter les tags et envoyer les notifications
     if tag_ids:
+        from app.services.friendships import is_blocked
         from app.services.notifications import create_notification
+
+        # Ne garder que des utilisateurs existants (un UUID inconnu = violation FK → 500)
+        existing_result = await db.execute(select(User.id).where(User.id.in_(tag_ids)))
+        existing_ids = set(existing_result.scalars().all())
+
         for tagged_id in tag_ids:
-            # Ne pas se taguer soi-même
-            if tagged_id == user.id:
+            # Ni soi-même, ni un inconnu, ni quelqu'un avec qui il y a un blocage
+            if tagged_id == user.id or tagged_id not in existing_ids:
+                continue
+            if await is_blocked(db, user.id, tagged_id):
                 continue
             db.add(PhotoTag(photo_id=uuid.UUID(photo_id), tagged_user_id=tagged_id))
             await create_notification(

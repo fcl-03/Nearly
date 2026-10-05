@@ -25,8 +25,8 @@ from app.services.friendships import (
 router = APIRouter()
 
 
-def _user_to_public(user: User) -> PublicUserProfile:
-    """Convertit un User ORM en PublicUserProfile minimal (sans friendship_status)."""
+def _user_to_public(user: User, friendship_status: str = "friends") -> PublicUserProfile:
+    """Convertit un User ORM en PublicUserProfile minimal."""
     return PublicUserProfile(
         id=user.id,
         first_name=user.first_name,
@@ -35,9 +35,11 @@ def _user_to_public(user: User) -> PublicUserProfile:
         avatar_url=user.avatar_url,
         city=user.city,
         is_verified=user.is_verified,
+        is_premium=user.is_premium,
         created_at=user.created_at,
+        last_active_at=user.last_active_at,
         interests=[],
-        friendship_status="friends",
+        friendship_status=friendship_status,
     )
 
 
@@ -106,7 +108,7 @@ async def list_friend_requests(
 ):
     """Retourne les demandes d'ami en attente reçues."""
     requesters = await get_pending_requests(db, current_user.id)
-    return [_user_to_public(u) for u in requesters]
+    return [_user_to_public(u, friendship_status="request_received") for u in requesters]
 
 
 @router.post("/users/{user_id}/block", response_model=dict)

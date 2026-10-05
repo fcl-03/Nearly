@@ -134,6 +134,15 @@ html.light input[type="time"] { color-scheme: light; }
   }
 }
 
+/* Scroll horizontal sans barre visible (sorties récentes, carrousels) */
+.nearly-hscroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.nearly-hscroll::-webkit-scrollbar {
+  display: none;
+}
+
 /* Animations partagées */
 @keyframes spin {
   from { transform: rotate(0deg); }

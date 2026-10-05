@@ -27,6 +27,12 @@ async def send_dm(
     if not receiver or receiver.is_banned:
         raise HTTPException(status_code=404, detail="Utilisateur introuvable")
 
+    # Blocage = aucun échange possible, même en « réponse » à une vieille
+    # conversation (sinon un bloqué pourrait continuer à écrire à son bloqueur).
+    from app.services.friendships import is_blocked
+    if await is_blocked(db, sender.id, receiver_id):
+        raise HTTPException(status_code=404, detail="Utilisateur introuvable")
+
     # Exception : si l'autre user nous a déjà écrit, on peut répondre
     # (peu importe premium / amitié) — sinon une conversation initiée par
     # l'admin ne pourrait jamais avoir de réponse.

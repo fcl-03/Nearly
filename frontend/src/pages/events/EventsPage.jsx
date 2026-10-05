@@ -7,6 +7,7 @@ import L from 'leaflet'
 import api from '../../services/api'
 import { getCat, formatTime } from '../../utils/categories'
 import { useThemeStore } from '../../stores/themeStore'
+import { getTileUrl } from '../../utils/mapTiles'
 import Spinner from '../../components/ui/Spinner'
 import EventCard from './EventCard'
 import AdCard from '../../components/ui/AdCard'
@@ -96,9 +97,7 @@ const CITY_KEY = 'nearly_user_city'
 export default function EventsPage() {
   const navigate = useNavigate()
   const { theme } = useThemeStore()
-  const tileUrl = theme === 'light'
-    ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+  const tileUrl = getTileUrl(theme)
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [category, setCategory] = useState('')
@@ -262,8 +261,8 @@ export default function EventsPage() {
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
 
       {/* ── En-tête ── */}
-      <div style={{ padding: '24px 20px 12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+      <div style={{ padding: '30px 20px 20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           {/* Logo */}
           <h1
             style={{
@@ -540,7 +539,7 @@ export default function EventsPage() {
               gridColumn: '1 / -1', // prend toute la largeur de la grille 2 colonnes en desktop
             }}
           >
-            <span style={{ fontSize: 44, marginBottom: 12 }}>🌆</span>
+            <span style={{ fontSize: 44, marginBottom: 12 }}></span>
             <p style={{ fontSize: 14, textAlign: 'center', lineHeight: 1.5 }}>
               Aucune sortie dans ce coin…<br />sois le premier !
             </p>

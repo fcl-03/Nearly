@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { MessagesSquare, Mail } from 'lucide-react'
 import api from '../../services/api'
 import { getCat, formatTime, formatLastMessage } from '../../utils/categories'
 import Spinner from '../../components/ui/Spinner'
@@ -87,7 +88,7 @@ export default function MessagesPage() {
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
 
       {/* ── En-tête ── */}
-      <div style={{ padding: '36px 20px 16px' }}>
+      <div style={{ padding: '30px 20px 16px' }}>
         <h1 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 24, color: 'var(--text)', margin: 0 }}>
           Messages
         </h1>
@@ -119,7 +120,7 @@ export default function MessagesPage() {
               <Spinner />
             </div>
           ) : sortedEvents.length === 0 ? (
-            <EmptyState icon="💬" text="Rejoins une sortie pour démarrer un chat" />
+            <EmptyState icon={<MessagesSquare size={40} strokeWidth={1.6} />} text="Rejoins une sortie pour démarrer un chat" />
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '8px 20px' }}>
               {sortedEvents.map(event => {
@@ -144,7 +145,7 @@ export default function MessagesPage() {
               <Spinner />
             </div>
           ) : dmConvos.length === 0 ? (
-            <EmptyState icon="✉️" text="Ajoute des amis pour leur envoyer des messages privés" />
+            <EmptyState icon={<Mail size={40} strokeWidth={1.6} />} text="Ajoute des amis pour leur envoyer des messages privés" />
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '8px 20px' }}>
               {dmConvos.map(convo => (
@@ -367,7 +368,7 @@ function DMConversationRow({ convo, onClick }) {
 function EmptyState({ icon, text }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '64px 20px', color: 'var(--text-tertiary)', gap: 12 }}>
-      <span style={{ fontSize: 44 }}>{icon}</span>
+      <span style={{ display: 'flex' }}>{icon}</span>
       <p style={{ fontSize: 14, textAlign: 'center', lineHeight: 1.6 }}>{text}</p>
     </div>
   )

@@ -18,7 +18,7 @@ class Event(Base):
     description: Mapped[str] = mapped_column(Text, nullable=False)
     category: Mapped[str] = mapped_column(String(50), nullable=False)
 
-    # "small_group" (3-6 personnes) ou "open" (illimité)
+    # "small_group" (2-6 personnes) ou "open" (illimité)
     event_type: Mapped[str] = mapped_column(String(20), nullable=False, default="small_group")
 
     location_name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -32,6 +32,8 @@ class Event(Base):
 
     is_sponsored: Mapped[bool] = mapped_column(Boolean, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # True une fois la notif "ajoute ta photo souvenir" envoyée (évite les doublons)
+    cover_prompt_sent: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     # Si True : les demandes "Rejoindre" doivent être validées par le créateur.
     # Sinon : join direct (comportement par défaut).
     requires_approval: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
@@ -52,6 +54,8 @@ class EventParticipant(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     joined_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     status: Mapped[str] = mapped_column(String(20), default="joined")  # joined | left | pending | rejected
+    # Photo souvenir personnelle du participant pour cette sortie (couverture de sa chip profil)
+    cover_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     event: Mapped["Event"] = relationship(back_populates="participants")
     user: Mapped["User"] = relationship(back_populates="event_participations")

@@ -12,23 +12,62 @@ from app.models.user import User
 from app.schemas.business import (
     BusinessCreateRequest,
     BusinessCreateSponsoredEvent,
+    BusinessResponse,
     BusinessSponsoredEventResponse,
     BusinessStatsResponse,
     BusinessUpdateRequest,
 )
 
-# Limites de sorties sponsorisées par plan (par semaine)
+# Limites de sorties sponsorisées par plan, par mois.
+# Source de vérité côté frontend : frontend/src/utils/businessPlans.js
 PLAN_LIMITS = {
-    "starter": 3,
-    "pro": 10,
+    "starter": 4,    # ≈ 1 par semaine
+    "pro": 12,       # ≈ 3 par semaine
     "exclusif": None,  # illimité
 }
 
 PLAN_PRICES = {
-    "starter": 49,
-    "pro": 99,
+    "starter": 29,
+    "pro": 79,
     "exclusif": 199,
 }
+
+
+def current_month_start() -> datetime:
+    """Début du mois calendaire courant (UTC)."""
+    return datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+
+async def count_sponsored_events_this_month(db: AsyncSession, business_id: uuid.UUID) -> int:
+    """Nombre de sorties sponsorisées créées par ce compte depuis le début du mois.
+    Compté dynamiquement — pas de compteur stocké à réinitialiser."""
+    result = await db.execute(
+        select(func.count()).select_from(BusinessSponsoredEvent).where(
+            BusinessSponsoredEvent.business_id == business_id,
+            BusinessSponsoredEvent.created_at >= current_month_start(),
+        )
+    )
+    return result.scalar() or 0
+
+
+async def to_business_response(db: AsyncSession, account: BusinessAccount) -> BusinessResponse:
+    """Sérialise un compte business — limite (PLAN_LIMITS) et usage mensuel calculés à la volée."""
+    return BusinessResponse(
+        id=account.id,
+        business_name=account.business_name,
+        siren=account.siren,
+        description=account.description,
+        logo_url=account.logo_url,
+        address=account.address,
+        city=account.city,
+        phone=account.phone,
+        website=account.website,
+        plan=account.plan,
+        sponsored_events_limit=PLAN_LIMITS.get(account.plan),
+        sponsored_events_used=await count_sponsored_events_this_month(db, account.id),
+        is_active=account.is_active,
+        created_at=account.created_at,
+    )
 
 
 async def create_business_account(
@@ -55,7 +94,6 @@ async def create_business_account(
         phone=data.phone,
         website=data.website,
         plan="starter",
-        sponsored_events_limit=PLAN_LIMITS["starter"],
     )
     db.add(account)
     await db.commit()
@@ -141,26 +179,30 @@ async def create_sponsored_event(
             detail="Ton compte entreprise est désactivé",
         )
 
-    # Vérifier la limite de sorties sponsorisées
-    if account.sponsored_events_limit is not None:
-        if account.sponsored_events_used >= account.sponsored_events_limit:
+    # Vérifier la limite mensuelle du plan — comptée dynamiquement sur le mois
+    # calendaire courant (source de vérité : PLAN_LIMITS, pas de compteur stocké).
+    limit = PLAN_LIMITS.get(account.plan)
+    if limit is not None:
+        used = await count_sponsored_events_this_month(db, account.id)
+        if used >= limit:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Limite de {account.sponsored_events_limit} sorties sponsorisées atteinte pour le plan {account.plan}. Passe au plan supérieur.",
+                detail=f"Limite de {limit} sorties sponsorisées ce mois-ci atteinte pour le plan {account.plan}. Passe au plan supérieur.",
             )
 
-    # Créer l'événement
+    # Créer l'événement — pour une sortie sponsorisée commerciale :
+    # on force le type "open" sans limite de participants (c'est de la promo).
     event = Event(
         creator_id=owner.id,
         title=data.title,
         description=data.description,
         category=data.category,
-        event_type=data.event_type,
+        event_type="open",
         location_name=data.location_name,
         latitude=data.latitude,
         longitude=data.longitude,
         starts_at=data.starts_at,
-        max_participants=data.max_participants,
+        max_participants=None,
         is_sponsored=True,
     )
     db.add(event)
@@ -173,9 +215,6 @@ async def create_sponsored_event(
     # Lier la sortie au compte business
     link = BusinessSponsoredEvent(business_id=account.id, event_id=event.id)
     db.add(link)
-
-    # Incrémenter le compteur
-    account.sponsored_events_used += 1
     await db.commit()
 
     # Compter les participants pour la réponse
@@ -232,7 +271,6 @@ async def upgrade_plan(
 
     account = await get_business_account(db, owner_id)
     account.plan = new_plan
-    account.sponsored_events_limit = PLAN_LIMITS[new_plan]
     await db.commit()
     await db.refresh(account)
     return account

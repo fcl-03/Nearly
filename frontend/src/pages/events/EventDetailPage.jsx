@@ -6,7 +6,9 @@ import { useAuthStore } from '../../stores/authStore'
 import api from '../../services/api'
 import { getCat, formatTime } from '../../utils/categories'
 import { useThemeStore } from '../../stores/themeStore'
+import { getTileUrl } from '../../utils/mapTiles'
 import Spinner from '../../components/ui/Spinner'
+import SectionLabel from '../../components/ui/SectionLabel'
 
 // Page de détail d'un événement — Figma: ActivityDetails
 export default function EventDetailPage() {
@@ -14,9 +16,7 @@ export default function EventDetailPage() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const { theme } = useThemeStore()
-  const tileUrl = theme === 'light'
-    ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+  const tileUrl = getTileUrl(theme)
 
   const [event, setEvent] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -265,7 +265,7 @@ export default function EventDetailPage() {
         {/* Mini carte */}
         {event.latitude && event.longitude && (
           <div>
-            <SectionLabel>Lieu</SectionLabel>
+            <SectionLabel mb={10}>Lieu</SectionLabel>
             <div
               style={{
                 borderRadius: 18,
@@ -296,7 +296,7 @@ export default function EventDetailPage() {
 
         {/* Participants */}
         <div>
-          <SectionLabel>
+          <SectionLabel mb={10}>
             Participants ({event.participants_count}{event.max_participants ? `/${event.max_participants}` : ''})
           </SectionLabel>
 
@@ -379,7 +379,7 @@ export default function EventDetailPage() {
         {/* Accès au chat si membre */}
         {event.is_joined && (
           <div>
-            <SectionLabel>Groupe de discussion</SectionLabel>
+            <SectionLabel mb={10}>Groupe de discussion</SectionLabel>
             <button
               onClick={() => navigate(`/messages/${event.id}`)}
               style={{
@@ -1104,25 +1104,6 @@ function ProfileGate({ step, verifStatus, event, cat, navigate }) {
   )
 }
 
-// Label de section
-function SectionLabel({ children }) {
-  return (
-    <p
-      style={{
-        fontSize: 10,
-        fontFamily: 'Syne, sans-serif',
-        fontWeight: 700,
-        textTransform: 'uppercase',
-        letterSpacing: '0.1em',
-        color: 'var(--text-tertiary)',
-        marginBottom: 10,
-      }}
-    >
-      {children}
-    </p>
-  )
-}
-
 // ── Demandes en attente (créateur d'une sortie à validation manuelle) ─────
 function PendingRequestsSection({ eventId, onChange }) {
   const navigate = useNavigate()
@@ -1155,7 +1136,7 @@ function PendingRequestsSection({ eventId, onChange }) {
   if (pendings.length === 0) {
     return (
       <div style={{ marginTop: 8 }}>
-        <SectionLabel>Demandes en attente</SectionLabel>
+        <SectionLabel mb={10}>Demandes en attente</SectionLabel>
         <p style={{ fontSize: 13, color: 'var(--text-tertiary)', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>
           Aucune demande en attente.
         </p>
@@ -1165,7 +1146,7 @@ function PendingRequestsSection({ eventId, onChange }) {
 
   return (
     <div style={{ marginTop: 8 }}>
-      <SectionLabel>Demandes en attente ({pendings.length})</SectionLabel>
+      <SectionLabel mb={10}>Demandes en attente ({pendings.length})</SectionLabel>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {pendings.map(u => (
           <div

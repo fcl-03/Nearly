@@ -1,7 +1,7 @@
 import uuid
 
 from fastapi import HTTPException, status
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -145,7 +145,7 @@ async def search_users(
     current_user_id: uuid.UUID,
     limit: int = 20,
 ) -> list[User]:
-    """Recherche des utilisateurs par username (exact ou préfixe)."""
+    """Recherche des utilisateurs par username (préfixe) ou prénom (préfixe)."""
     q = query.strip().lower().lstrip('@')
     if len(q) < 2:
         return []
@@ -159,12 +159,56 @@ async def search_users(
     result = await db.execute(
         select(User)
         .where(
-            User.username.ilike(f"{q}%"),
+            or_(
+                User.username.ilike(f"{q}%"),
+                User.first_name.ilike(f"{q}%"),
+            ),
             User.is_banned == False,  # noqa: E712
             User.id != current_user_id,
             User.id.notin_(blocked_me),
         )
         .order_by(User.username)
+        .limit(limit)
+    )
+    return list(result.scalars().all())
+
+
+async def get_friend_suggestions(
+    db: AsyncSession,
+    current_user: User,
+    limit: int = 30,
+) -> list[User]:
+    """Suggère des utilisateurs vérifiés de la même ville, hors relations existantes.
+
+    Exclut : soi-même, les amis, les demandes en cours (envoyées/reçues) et
+    tout blocage (dans les deux sens). Triés par activité récente.
+    """
+    if not current_user.city:
+        return []
+
+    # Tous les utilisateurs déjà en relation avec moi (ami, demande, blocage) → exclus
+    rel_result = await db.execute(
+        select(Friendship.requester_id, Friendship.addressee_id).where(
+            or_(
+                Friendship.requester_id == current_user.id,
+                Friendship.addressee_id == current_user.id,
+            )
+        )
+    )
+    excluded_ids = {current_user.id}
+    for requester_id, addressee_id in rel_result.all():
+        excluded_ids.add(requester_id)
+        excluded_ids.add(addressee_id)
+
+    result = await db.execute(
+        select(User)
+        .where(
+            func.lower(User.city) == current_user.city.strip().lower(),
+            User.is_verified == True,  # noqa: E712
+            User.is_banned == False,  # noqa: E712
+            User.id.notin_(excluded_ids),
+        )
+        .order_by(User.last_active_at.desc())
         .limit(limit)
     )
     return list(result.scalars().all())

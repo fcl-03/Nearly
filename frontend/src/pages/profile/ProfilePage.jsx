@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Shield, Plus, Trash2, Heart, X, ChevronLeft, ChevronRight, Pencil, Check, Settings } from 'lucide-react'
+import { Shield, Plus, Trash2, Heart, X, ChevronLeft, ChevronRight, Pencil, Check, Settings, MapPin, Mail, Clock, XCircle, ScanFace, CalendarDays, Camera, Image as ImageIcon } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import api from '../../services/api'
 import { getCat } from '../../utils/categories'
 import Spinner from '../../components/ui/Spinner'
 import PhotoUploadModal from '../../components/ui/PhotoUploadModal'
+import SectionLabel from '../../components/ui/SectionLabel'
+import SouvenirModal from '../../components/ui/SouvenirModal'
 
 // Page de profil — Figma: Profile
 export default function ProfilePage() {
@@ -22,7 +24,12 @@ export default function ProfilePage() {
   const [achievements, setAchievements] = useState([])
   const [viewerIndex, setViewerIndex] = useState(null)
   const [verifStatus, setVerifStatus] = useState(null) // null | 'pending' | 'rejected' | 'approved'
+  const [coverMenuEvent, setCoverMenuEvent] = useState(null) // sortie dont on gère la photo souvenir
+  const [coverUploading, setCoverUploading] = useState(null) // id de la sortie en cours d'upload
+  const [souvenirEventId, setSouvenirEventId] = useState(null) // récap souvenir ouvert
   const avatarRef = useRef()
+  const coverCameraRef = useRef()
+  const coverGalleryRef = useRef()
 
   async function handleResendVerification() {
     setResendStatus('sending')
@@ -34,12 +41,11 @@ export default function ProfilePage() {
     }
   }
 
-  // Charger les sorties rejointes, les photos, badges et statut de vérification
+  // Charger l'historique des sorties (souvenirs), les badges et le statut de vérification
   useEffect(() => {
-    api.get('/events').then(r => {
-      const joined = r.data.filter(e => e.is_joined)
-      setJoinedEventsCount(joined.length)
-      setJoinedEvents(joined.slice(0, 3))
+    api.get('/events/me/history').then(({ data }) => {
+      setJoinedEventsCount(data.length)
+      setJoinedEvents(data)
     }).catch(() => {})
     api.get('/badges').then(({ data }) => setAllBadges(data)).catch(() => {})
     api.get('/verification/status').then(({ data }) => setVerifStatus(data.status)).catch(() => {})
@@ -75,6 +81,37 @@ export default function ProfilePage() {
     finally { setAvatarLoading(false) }
   }
 
+  // Upload de la photo souvenir pour la sortie sélectionnée (caméra ou galerie)
+  async function handleCoverFile(e) {
+    const file = e.target.files?.[0]
+    e.target.value = '' // reset pour pouvoir re-sélectionner le même fichier
+    const event = coverMenuEvent
+    if (!file || !event) return
+    setCoverMenuEvent(null)
+    setCoverUploading(event.id)
+    try {
+      const fd = new FormData()
+      fd.append('cover', file)
+      const { data } = await api.post(`/events/${event.id}/cover`, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+      setJoinedEvents(prev => prev.map(ev => ev.id === event.id ? { ...ev, cover_url: data.cover_url } : ev))
+    } catch (err) {
+      // Feedback indispensable : photo HEIC refusée (422), fichier trop lourd (413)...
+      alert(err.response?.data?.detail || 'Impossible d\'ajouter la photo. Réessaie avec un JPEG/PNG de moins de 8 Mo.')
+    }
+    finally { setCoverUploading(null) }
+  }
+
+  // Retirer la photo souvenir d'une sortie
+  async function handleCoverRemove(eventId) {
+    setCoverMenuEvent(null)
+    try {
+      await api.delete(`/events/${eventId}/cover`)
+      setJoinedEvents(prev => prev.map(ev => ev.id === eventId ? { ...ev, cover_url: null } : ev))
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Erreur lors de la suppression de la photo.')
+    }
+  }
+
   if (!user) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh' }}>
@@ -88,17 +125,8 @@ export default function ProfilePage() {
   return (
     <div style={{ minHeight: '100%', overflowY: 'auto' }}>
 
-      {/* ── Section avatar + nom + stats ── */}
-      <div
-        style={{
-          padding: '36px 20px 24px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 12,
-          position: 'relative',
-        }}
-      >
+      {/* ── Header : avatar + identité ── */}
+      <div style={{ padding: '45px 20px 22px', position: 'relative' }}>
         {/* Bouton paramètres en haut à droite */}
         <button
           onClick={() => navigate('/settings')}
@@ -124,164 +152,150 @@ export default function ProfilePage() {
           <Settings size={20} />
         </button>
 
-        {/* Avatar centré */}
-        <button
-          onClick={() => avatarRef.current.click()}
-          style={{
-            position: 'relative',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: 0,
-          }}
-          aria-label="Modifier l'avatar"
-        >
-          <div
-            style={{
-              width: 68,
-              height: 68,
-              borderRadius: '50%',
-              border: '4px solid var(--accent)',
-              overflow: 'hidden',
-              background: 'var(--surface2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 28,
-              fontWeight: 700,
-              color: 'var(--accent)',
-              fontFamily: 'Syne, sans-serif',
-            }}
+        {/* Ligne avatar + identité */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, paddingRight: 32 }}>
+          {/* Avatar */}
+          <button
+            onClick={() => avatarRef.current.click()}
+            style={{ position: 'relative', background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}
+            aria-label="Modifier l'avatar"
           >
-            {avatarLoading ? (
-              <Spinner size="sm" />
-            ) : user.avatar_url ? (
-              <img src={user.avatar_url} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            ) : (
-              user.first_name?.[0]?.toUpperCase()
-            )}
-          </div>
-          {/* Bouton "+" pour modifier */}
-          <div
-            style={{
-              position: 'absolute',
-              bottom: -2,
-              right: -2,
-              width: 22,
-              height: 22,
-              borderRadius: '50%',
-              background: 'var(--accent)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 14,
-              fontWeight: 900,
-              color: 'var(--bg)',
-            }}
-          >
-            +
-          </div>
-        </button>
-        <input
-          ref={avatarRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          style={{ display: 'none' }}
-          onChange={handleAvatarChange}
-        />
+            <div
+              style={{
+                width: 60,
+                height: 60,
+                borderRadius: '50%',
+                border: '2.5px solid var(--accent)',
+                overflow: 'hidden',
+                background: 'var(--surface2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 24,
+                fontWeight: 700,
+                color: 'var(--accent-text)',
+                fontFamily: 'Syne, sans-serif',
+              }}
+            >
+              {avatarLoading ? (
+                <Spinner size="sm" />
+              ) : user.avatar_url ? (
+                <img src={user.avatar_url} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                user.first_name?.[0]?.toUpperCase()
+              )}
+            </div>
+            {/* Bouton "+" pour modifier */}
+            <div
+              style={{
+                position: 'absolute',
+                bottom: -2,
+                right: -2,
+                width: 21,
+                height: 21,
+                borderRadius: '50%',
+                background: 'var(--accent)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 13,
+                fontWeight: 900,
+                color: 'var(--bg)',
+                border: '2px solid var(--bg)',
+              }}
+            >
+              +
+            </div>
+          </button>
+          <input
+            ref={avatarRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            style={{ display: 'none' }}
+            onChange={handleAvatarChange}
+          />
 
-        {/* Nom centré + badge Vérifié */}
-        <div style={{ textAlign: 'center' }}>
-          <h1
-            style={{
-              fontFamily: 'Syne, sans-serif',
-              fontWeight: 700,
-              fontSize: 22,
-              color: 'var(--text)',
-              margin: 0,
-            }}
-          >
-            {user.first_name}
-          </h1>
-          {user.username && (
-            <p style={{ fontSize: 13, color: 'var(--text-tertiary)', margin: '2px 0 0', fontFamily: 'DM Sans, sans-serif' }}>
-              @{user.username}
-            </p>
-          )}
-          <div style={{ display: 'flex', gap: 6, justifyContent: 'center', flexWrap: 'wrap', marginTop: user.is_verified || user.is_premium ? 6 : 0 }}>
-            {user.is_verified && (
-              <span
+          {/* Identité : nom + badge + username + ville */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <h1
                 style={{
-                  display: 'inline-block',
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: 'var(--green)',
-                  border: '1px solid var(--green)',
-                  borderRadius: 999,
-                  padding: '3px 10px',
+                  fontFamily: 'Syne, sans-serif',
+                  fontWeight: 800,
+                  fontSize: 24,
+                  color: 'var(--text)',
+                  margin: 0,
+                  lineHeight: 1.1,
                 }}
               >
-                Vérifié ✓
-              </span>
+                {user.first_name}
+              </h1>
+              {user.is_verified && (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 3,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: 'var(--green)',
+                    background: 'rgba(61,219,130,0.12)',
+                    border: '1px solid rgba(61,219,130,0.35)',
+                    borderRadius: 999,
+                    padding: '3px 9px',
+                  }}
+                >
+                  Vérifié ✓
+                </span>
+              )}
+            </div>
+            {user.username && (
+              <p style={{ fontSize: 14, color: 'var(--text-secondary)', margin: '4px 0 0', fontFamily: 'DM Sans, sans-serif' }}>
+                @{user.username}
+              </p>
             )}
-            {user.is_premium && (
-              <span
-                style={{
-                  display: 'inline-block',
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: 'var(--accent)',
-                  border: '1px solid var(--accent)',
-                  borderRadius: 999,
-                  padding: '3px 10px',
-                }}
-              >
-                Premium ⭐
-              </span>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6, flexWrap: 'wrap' }}>
+              {user.city && (
+                <span style={{ fontSize: 13, color: 'var(--text-secondary)', display: 'inline-flex', alignItems: 'center', gap: 4 }}><MapPin size={13} /> {user.city}</span>
+              )}
+              {user.is_premium && (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 3,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: 'var(--accent-text)',
+                    background: 'rgba(232,255,71,0.12)',
+                    border: '1px solid var(--accent-border)',
+                    borderRadius: 999,
+                    padding: '2px 8px',
+                  }}
+                >
+                  Premium ⭐
+                </span>
+              )}
+            </div>
           </div>
-          {user.city && (
-            <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>📍 {user.city}</p>
-          )}
-          {user.bio && (
-            <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4, lineHeight: 1.5 }}>
+        </div>
+
+        {/* Bio */}
+        {user.bio && (
+          <div style={{ marginTop: 20 }}>
+            <SectionLabel>Bio</SectionLabel>
+            <p style={{ fontSize: 15, color: 'var(--text)', margin: 0, lineHeight: 1.55 }}>
               {user.bio}
             </p>
-          )}
-        </div>
-
-        {/* Stats */}
-        <div style={{ display: 'flex', gap: 32 }}>
-          <div style={{ textAlign: 'center' }}>
-            <span
-              style={{
-                display: 'block',
-                fontFamily: 'Syne, sans-serif',
-                fontWeight: 800,
-                fontSize: 28,
-                color: 'var(--accent)',
-              }}
-            >
-              {joinedEventsCount}
-            </span>
-            <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>sorties</span>
           </div>
-          <div style={{ textAlign: 'center' }}>
-            <span
-              style={{
-                display: 'block',
-                fontFamily: 'Syne, sans-serif',
-                fontWeight: 800,
-                fontSize: 28,
-                color: 'var(--accent)',
-              }}
-            >
-              {badges.reduce((sum, b) => sum + (b.count || 0), 0)}
-            </span>
-            <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>badges</span>
-          </div>
-        </div>
+        )}
 
+        {/* Stats — centrées, sans fond, séparées par une barre verticale */}
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 40, marginTop: 24 }}>
+          <Stat value={joinedEventsCount} label="Sorties" />
+          <div style={{ width: 1, height: 38, background: 'var(--border-color)' }} />
+          <Stat value={badges.reduce((sum, b) => sum + (b.count || 0), 0)} label="Badges" />
+        </div>
       </div>
 
       {/* ── Bannière email non vérifié ── */}
@@ -297,7 +311,7 @@ export default function ProfilePage() {
             gap: 10,
           }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-              <span style={{ fontSize: 18, flexShrink: 0 }}>📬</span>
+              <Mail size={18} color="var(--orange)" style={{ flexShrink: 0, marginTop: 1 }} />
               <div style={{ flex: 1 }}>
                 <p style={{ fontWeight: 700, fontSize: 13, color: 'var(--orange)', margin: 0 }}>
                   Email non vérifié
@@ -388,7 +402,7 @@ export default function ProfilePage() {
               border: '1.5px solid rgba(61,219,130,0.3)', borderRadius: 18,
               padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14,
             }}>
-              <span style={{ fontSize: 26, flexShrink: 0 }}>⏳</span>
+              <Clock size={24} color="var(--green)" style={{ flexShrink: 0 }} />
               <div style={{ flex: 1 }}>
                 <p style={{ fontWeight: 700, fontSize: 14, color: 'var(--green)', margin: 0 }}>Demande envoyée</p>
                 <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
@@ -407,7 +421,7 @@ export default function ProfilePage() {
                 cursor: 'pointer', textAlign: 'left',
               }}
             >
-              <span style={{ fontSize: 26, flexShrink: 0 }}>❌</span>
+              <XCircle size={24} color="#FF4D4D" style={{ flexShrink: 0 }} />
               <div style={{ flex: 1 }}>
                 <p style={{ fontWeight: 700, fontSize: 14, color: '#FF4D4D', margin: 0 }}>Vérification refusée</p>
                 <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>Appuie pour renvoyer ta demande</p>
@@ -427,8 +441,8 @@ export default function ProfilePage() {
               onMouseEnter={e => e.currentTarget.style.background = 'rgba(232,255,71,0.13)'}
               onMouseLeave={e => e.currentTarget.style.background = 'rgba(232,255,71,0.08)'}
             >
-              <div style={{ width: 44, height: 44, borderRadius: '50%', border: '2px solid var(--accent)', background: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>
-                🪪
+              <div style={{ width: 44, height: 44, borderRadius: '50%', border: '2px solid var(--accent)', background: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'var(--accent-text)' }}>
+                <ScanFace size={22} />
               </div>
               <div style={{ flex: 1 }}>
                 <p style={{ fontWeight: 600, fontSize: 15, color: 'var(--text)', margin: 0 }}>Vérifier mon identité</p>
@@ -446,7 +460,7 @@ export default function ProfilePage() {
       {allBadges.length > 0 && (
         <div style={{ padding: '0 24px 28px' }}>
           <SectionLabel>Badges reçus</SectionLabel>
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
             {allBadges.map(b => {
               const earned = badges.find(ub => ub.id === b.id)
               return (
@@ -455,20 +469,21 @@ export default function ProfilePage() {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 7,
+                    gap: 5,
                     background: earned ? 'rgba(232,255,71,0.08)' : 'var(--surface2)',
-                    border: `1.5px solid ${earned ? 'rgba(232,255,71,0.3)' : 'var(--border-color)'}`,
+                    border: `1px solid ${earned ? 'rgba(232,255,71,0.35)' : 'var(--border-color)'}`,
                     borderRadius: 999,
-                    padding: '8px 14px',
+                    padding: '5px 10px',
                     opacity: earned ? 1 : 0.35,
+                    boxShadow: earned ? '0 0 12px rgba(232,255,71,0.25)' : 'none',
                   }}
                 >
-                  <span style={{ fontSize: 18 }}>{b.emoji}</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: earned ? 'var(--accent)' : 'var(--text-secondary)', fontFamily: 'DM Sans, sans-serif' }}>
+                  <span style={{ fontSize: 14 }}>{b.emoji}</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: earned ? 'var(--accent)' : 'var(--text-secondary)', fontFamily: 'DM Sans, sans-serif' }}>
                     {b.name}
                   </span>
                   {earned && (
-                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', background: 'var(--bg)', borderRadius: 999, padding: '1px 6px', marginLeft: 2, fontFamily: 'Syne, sans-serif' }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent)', background: 'var(--bg)', borderRadius: 999, padding: '0 5px', marginLeft: 1, fontFamily: 'Syne, sans-serif' }}>
                       {earned.count}
                     </span>
                   )}
@@ -484,31 +499,6 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* ── Succès ── */}
-      {achievements.length > 0 && (
-        <div style={{ padding: '0 24px 28px' }}>
-          <SectionLabel>Succès</SectionLabel>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {achievements.map(a => (
-              <div
-                key={a.key}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 7,
-                  background: 'rgba(61,219,130,0.07)',
-                  border: '1.5px solid rgba(61,219,130,0.25)',
-                  borderRadius: 999, padding: '7px 14px',
-                }}
-              >
-                <span style={{ fontSize: 16 }}>{a.emoji}</span>
-                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--green)', fontFamily: 'DM Sans, sans-serif' }}>
-                  {a.name}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* ── Photos ── */}
       <div style={{ padding: '0 24px 24px' }}>
         <SectionLabel>Photos</SectionLabel>
@@ -519,8 +509,8 @@ export default function ProfilePage() {
               onClick={() => setShowUploadModal(true)}
               style={{
                 aspectRatio: '1',
-                background: 'var(--surface2)',
-                border: '1.5px dashed var(--border-color)',
+                background: 'rgba(232,255,71,0.06)',
+                border: '1.5px dashed var(--accent-border)',
                 borderRadius: 10,
                 display: 'flex',
                 flexDirection: 'column',
@@ -528,9 +518,10 @@ export default function ProfilePage() {
                 justifyContent: 'center',
                 gap: 6,
                 cursor: 'pointer',
+                boxShadow: '0 0 16px rgba(232,255,71,0.22)',
               }}
             >
-              <Plus size={22} color="var(--text-tertiary)" />
+              <Plus size={22} color="var(--accent-text)" />
             </button>
           )}
           {/* Photos existantes */}
@@ -596,34 +587,58 @@ export default function ProfilePage() {
               gap: 8,
             }}
           >
-            <span style={{ fontSize: 32 }}>🌆</span>
+            <CalendarDays size={32} color="var(--text-tertiary)" strokeWidth={1.6} />
             <p style={{ fontSize: 13 }}>Aucune sortie pour l'instant</p>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div
+            className="nearly-hscroll"
+            style={{ display: 'flex', gap: 12, overflowX: 'auto', margin: '0 -20px', padding: '4px 20px 6px', WebkitOverflowScrolling: 'touch' }}
+          >
             {joinedEvents.map(event => {
               const cat = getCat(event.category)
+              const uploading = coverUploading === event.id
               return (
-                <div
+                <button
                   key={event.id}
+                  onClick={() => setCoverMenuEvent(event)}
                   style={{
-                    background: 'var(--surface2)',
-                    border: `1px solid ${cat.color}`,
+                    flex: '0 0 150px',
+                    width: 150,
+                    height: 78,
+                    position: 'relative',
+                    background: event.cover_url ? 'var(--surface2)' : `linear-gradient(135deg, ${cat.color}45, ${cat.color}14)`,
+                    border: `1px solid ${event.cover_url ? 'var(--border-color)' : cat.color + '33'}`,
                     borderRadius: 14,
-                    padding: '12px 16px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 12,
+                    overflow: 'hidden',
+                    padding: 0,
+                    cursor: 'pointer',
+                    textAlign: 'left',
                   }}
                 >
-                  <span style={{ fontSize: 20, flexShrink: 0 }}>{cat.emoji}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
+                  {/* Photo souvenir en fond si présente */}
+                  {event.cover_url && (
+                    <img src={event.cover_url} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                  )}
+                  {/* Scrim pour lisibilité du texte */}
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.75), rgba(0,0,0,0.05) 62%)' }} />
+                  {/* Coin haut : emoji catégorie (sans photo) ou picto appareil photo (incitation) */}
+                  {event.cover_url
+                    ? <span style={{ position: 'absolute', top: 7, right: 8, fontSize: 13 }}>{cat.emoji}</span>
+                    : <span style={{ position: 'absolute', top: 7, right: 8, display: 'flex' }}><Camera size={13} color="rgba(255,255,255,0.85)" /></span>}
+                  {/* Overlay pendant l'upload */}
+                  {uploading && (
+                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Spinner size="sm" />
+                    </div>
+                  )}
+                  <div style={{ position: 'absolute', left: 10, right: 10, bottom: 8 }}>
                     <p
                       style={{
                         fontFamily: 'Syne, sans-serif',
                         fontWeight: 700,
-                        fontSize: 13,
-                        color: 'var(--text)',
+                        fontSize: 12.5,
+                        color: '#fff',
                         margin: 0,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -632,19 +647,62 @@ export default function ProfilePage() {
                     >
                       {event.title}
                     </p>
-                    <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: 0 }}>
-                      {event.location_name}
+                    <p style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.72)', margin: '2px 0 0' }}>
+                      {formatEventDate(event.starts_at)}
                     </p>
                   </div>
-                  <span style={{ fontSize: 11, color: cat.color, fontWeight: 600, flexShrink: 0 }}>
-                    ✓
-                  </span>
-                </div>
+                </button>
               )
             })}
           </div>
         )}
       </div>
+
+      {/* Inputs cachés pour la photo souvenir (caméra / galerie) */}
+      <input ref={coverCameraRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handleCoverFile} />
+      <input ref={coverGalleryRef} type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} onChange={handleCoverFile} />
+
+      {/* Menu photo souvenir d'une sortie */}
+      {coverMenuEvent && (
+        <CoverMenu
+          event={coverMenuEvent}
+          onClose={() => setCoverMenuEvent(null)}
+          onCamera={() => coverCameraRef.current.click()}
+          onGallery={() => coverGalleryRef.current.click()}
+          onRemove={() => handleCoverRemove(coverMenuEvent.id)}
+          onOpenEvent={() => { const id = coverMenuEvent.id; setCoverMenuEvent(null); setSouvenirEventId(id) }}
+        />
+      )}
+
+      {/* Récap souvenir d'une sortie */}
+      {souvenirEventId && (
+        <SouvenirModal eventId={souvenirEventId} onClose={() => setSouvenirEventId(null)} />
+      )}
+
+      {/* ── Succès (en bas, discret) ── */}
+      {achievements.length > 0 && (
+        <div style={{ padding: '0 20px 32px' }}>
+          <SectionLabel>Succès</SectionLabel>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {achievements.map(a => (
+              <div
+                key={a.key}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 7,
+                  background: 'rgba(61,219,130,0.07)',
+                  border: '1.5px solid rgba(61,219,130,0.25)',
+                  borderRadius: 999, padding: '7px 14px',
+                }}
+              >
+                <span style={{ fontSize: 16 }}>{a.emoji}</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--green)', fontFamily: 'DM Sans, sans-serif' }}>
+                  {a.name}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -730,22 +788,68 @@ function OwnPhotoViewer({ photos, initialIndex, onClose, onDelete, onDescription
   )
 }
 
-// Label de section
-function SectionLabel({ children }) {
+// Date d'une sortie (jour du souvenir)
+function formatEventDate(iso) {
+  if (!iso) return ''
+  return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+// Menu (bottom sheet) de gestion de la photo souvenir d'une sortie
+function CoverMenu({ event, onClose, onCamera, onGallery, onRemove, onOpenEvent }) {
   return (
-    <p
+    <>
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} />
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+          width: '100%', maxWidth: 600, zIndex: 201, background: 'var(--surface2)',
+          borderRadius: '20px 20px 0 0', borderTop: '1px solid var(--border-color)',
+          padding: '16px 16px calc(24px + env(safe-area-inset-bottom))',
+          display: 'flex', flexDirection: 'column', gap: 8,
+        }}
+      >
+        <div style={{ width: 40, height: 4, borderRadius: 999, background: 'var(--border-color)', margin: '0 auto 8px' }} />
+        <p style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 16, color: 'var(--text)', margin: '0 4px' }}>{event.title}</p>
+        <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '0 4px 8px' }}>Immortalise ton souvenir de cette sortie</p>
+        <CoverItem icon={<Camera size={18} />} label="Prendre une photo" onClick={onCamera} />
+        <CoverItem icon={<ImageIcon size={18} />} label="Choisir dans la galerie" onClick={onGallery} />
+        <CoverItem icon={<CalendarDays size={18} />} label="Voir le souvenir" onClick={onOpenEvent} />
+        {event.cover_url && <CoverItem icon={<Trash2 size={18} />} label="Retirer la photo" danger onClick={onRemove} />}
+      </div>
+    </>
+  )
+}
+
+function CoverItem({ icon, label, onClick, danger }) {
+  return (
+    <button
+      onClick={onClick}
       style={{
-        fontSize: 10,
-        fontFamily: 'Syne, sans-serif',
-        fontWeight: 700,
-        textTransform: 'uppercase',
-        letterSpacing: '0.1em',
-        color: 'var(--text-tertiary)',
-        marginBottom: 12,
+        display: 'flex', alignItems: 'center', gap: 12, width: '100%',
+        background: 'var(--bg)', border: '1px solid var(--border-color)', borderRadius: 12,
+        padding: '13px 14px', cursor: 'pointer', textAlign: 'left',
+        fontFamily: 'DM Sans, sans-serif', fontSize: 14, fontWeight: 500,
+        color: danger ? '#FF4D4D' : 'var(--text)',
       }}
     >
-      {children}
-    </p>
+      <span style={{ display: 'flex', color: danger ? '#FF4D4D' : 'var(--text-secondary)' }}>{icon}</span>
+      {label}
+    </button>
+  )
+}
+
+// Statistique centrée (sorties / badges) — sans fond
+function Stat({ value, label }) {
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <span style={{ display: 'block', fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 32, color: 'var(--accent-text)', lineHeight: 1 }}>
+        {value}
+      </span>
+      <span style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginTop: 7 }}>
+        {label}
+      </span>
+    </div>
   )
 }
 

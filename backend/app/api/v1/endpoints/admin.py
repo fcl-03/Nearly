@@ -157,6 +157,12 @@ async def ban_user(
 
     user.is_banned = True
     await db.commit()
+
+    # Révoquer toutes les sessions : les access tokens sont rejetés à la prochaine
+    # requête (check is_banned dans get_current_user), les refresh sont tués ici.
+    from app.core.redis import revoke_user_refresh_tokens
+    await revoke_user_refresh_tokens(str(user.id))
+
     return MessageResponse(message=f"Utilisateur {user.email} banni.")
 
 

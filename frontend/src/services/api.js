@@ -12,7 +12,11 @@ api.interceptors.response.use(
   (res) => res,
   async (error) => {
     const original = error.config
-    if (error.response?.status === 401 && !original._retry) {
+    // Ne jamais tenter de refresh sur les endpoints d'auth eux-mêmes :
+    // un 401 de /auth/login (mauvais mot de passe) déclencherait refresh → échec
+    // → logout + reload de la page, effaçant le message d'erreur du formulaire.
+    const isAuthRoute = original?.url?.startsWith('/auth/')
+    if (error.response?.status === 401 && !original._retry && !isAuthRoute) {
       original._retry = true
       try {
         // Le refresh token est dans un cookie httpOnly — le backend le lit automatiquement
@@ -21,7 +25,10 @@ api.interceptors.response.use(
         return api(original)
       } catch {
         useAuthStore.getState().logout()
-        window.location.href = '/login'
+        // Éviter une boucle de reload si on est déjà sur la page de login
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login'
+        }
         return Promise.reject(error)
       }
     }

@@ -78,6 +78,7 @@ class PublicUserProfile(BaseModel):
     is_verified: bool
     is_premium: bool = False
     created_at: datetime
+    last_active_at: datetime | None = None
     interests: list[InterestOut]
     # none | request_sent | request_received | friends
     friendship_status: str = "none"

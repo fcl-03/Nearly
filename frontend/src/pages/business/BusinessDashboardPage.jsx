@@ -3,13 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Building2, Plus, BarChart3, Calendar, Users, ChevronRight } from 'lucide-react'
 import api from '../../services/api'
 import Spinner from '../../components/ui/Spinner'
+import { BUSINESS_PLANS } from '../../utils/businessPlans'
 
-// Plans B2B avec leurs prix et limites
-const PLANS = {
-  starter: { label: 'Starter', price: '49 €/mois', color: 'var(--blue)', limit: '3 sorties sponsorisées' },
-  pro: { label: 'Pro', price: '99 €/mois', color: 'var(--violet)', limit: '10 sorties + stats' },
-  exclusif: { label: 'Exclusif', price: '199 €/mois', color: '#FFB800', limit: 'Illimité + badge partenaire' },
-}
+// Adaptateur : format attendu par la page (label, price, color, limit)
+const PLANS = Object.fromEntries(
+  Object.entries(BUSINESS_PLANS).map(([key, p]) => [
+    key,
+    { label: p.label, price: p.priceLabel, color: p.color, limit: p.sortiesLabel },
+  ])
+)
 
 export default function BusinessDashboardPage() {
   const navigate = useNavigate()

@@ -24,7 +24,7 @@ class TestBusinessAccount:
         data = r.json()
         assert data["business_name"] == "Le Petit Troyen"
         assert data["plan"] == "starter"
-        assert data["sponsored_events_limit"] == 3
+        assert data["sponsored_events_limit"] == 4
         assert data["sponsored_events_used"] == 0
         assert data["is_active"] is True
 
@@ -85,6 +85,24 @@ class TestSponsoredEvents:
         assert data["event_title"] == "Soirée tapas sponsorisée"
 
     def test_list_sponsored_events(self, client: TestClient, other_token: str):
+        # Autonome : garantir un compte + une sortie sponsorisée (idempotent),
+        # car l'isolation vide les events entre chaque test.
+        client.post("/api/v1/business", headers=auth(other_token), json={
+            "business_name": "Le Petit Troyen",
+            "city": "Troyes",
+        })
+        starts_at = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
+        client.post("/api/v1/business/me/events", headers=auth(other_token), json={
+            "title": "Soirée tapas sponsorisée",
+            "description": "Venez découvrir nos tapas maison !",
+            "category": "food",
+            "event_type": "open",
+            "location_name": "Le Petit Troyen",
+            "latitude": 48.2973,
+            "longitude": 4.0744,
+            "starts_at": starts_at,
+        })
+
         r = client.get("/api/v1/business/me/events", headers=auth(other_token))
         assert r.status_code == 200
         events = r.json()

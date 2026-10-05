@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, UserPlus, UserCheck, UserX, Clock, MessageCircle, Heart, X, ChevronLeft, ChevronRight, Flag, ShieldOff, ShieldBan } from 'lucide-react'
+import { ArrowLeft, UserPlus, UserCheck, UserX, Clock, MessageCircle, Heart, X, ChevronLeft, ChevronRight, Flag, ShieldOff, ShieldBan, MapPin } from 'lucide-react'
 import api from '../../services/api'
+import { getCat } from '../../utils/categories'
 import Spinner from '../../components/ui/Spinner'
+import SectionLabel from '../../components/ui/SectionLabel'
+import SouvenirModal from '../../components/ui/SouvenirModal'
 
 // Motifs de signalement
 const REPORT_REASONS = [
@@ -32,6 +35,8 @@ export default function UserProfilePage() {
 
   // Photo viewer
   const [viewerIndex, setViewerIndex] = useState(null) // index de la photo ouverte
+  const [eventsHistory, setEventsHistory] = useState([]) // souvenirs de cet utilisateur
+  const [souvenirEventId, setSouvenirEventId] = useState(null) // récap souvenir ouvert
 
   useEffect(() => {
     api.get(`/users/${id}`).then(({ data }) => setProfile(data)).catch(() => navigate(-1)).finally(() => setLoading(false))
@@ -40,6 +45,7 @@ export default function UserProfilePage() {
     api.get('/badges').then(({ data }) => setAllBadges(data)).catch(() => {})
     api.get(`/users/${id}/badges-given-by-me`).then(({ data }) => setBadgesGiven(data)).catch(() => {})
     api.get(`/users/${id}/achievements`).then(({ data }) => setAchievements(data)).catch(() => {})
+    api.get(`/users/${id}/events-history`).then(({ data }) => setEventsHistory(data)).catch(() => {})
   }, [id])
 
   const [friendError, setFriendError] = useState(null)
@@ -88,9 +94,6 @@ export default function UserProfilePage() {
   async function handleLike(photoId) {
     const { data } = await api.post(`/photos/${photoId}/like`)
     setPhotos(prev => prev.map(p => p.id === photoId ? { ...p, liked_by_me: data.liked_by_me, likes_count: data.likes_count } : p))
-    if (viewerIndex !== null) {
-      // Sync le viewer aussi
-    }
   }
 
   if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100dvh' }}><Spinner /></div>
@@ -147,41 +150,83 @@ export default function UserProfilePage() {
 
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 48 }}>
 
-        {/* ── Hero ── */}
-        <div style={{ padding: '32px 24px 28px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+        {/* ── Header : avatar + identité ── */}
+        <div style={{ padding: '24px 20px 0' }}>
+          {/* Ligne avatar + identité */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            {/* Avatar (bordure verte si ami, accent sinon) */}
+            <div
+              style={{
+                width: 60,
+                height: 60,
+                borderRadius: '50%',
+                flexShrink: 0,
+                background: 'var(--surface2)',
+                border: `2.5px solid ${status === 'friends' ? 'var(--green)' : 'var(--accent)'}`,
+                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 24,
+                fontWeight: 700,
+                color: 'var(--text-secondary)',
+                fontFamily: 'Syne, sans-serif',
+                transition: 'border-color 0.3s',
+              }}
+            >
+              {profile.avatar_url ? <img src={profile.avatar_url} alt={profile.first_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : profile.first_name?.[0]?.toUpperCase()}
+            </div>
 
-          {/* Avatar */}
-          <div style={{ width: 96, height: 96, borderRadius: '50%', background: 'var(--surface2)', border: `3px solid ${status === 'friends' ? 'var(--green)' : 'var(--border-color)'}`, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36, fontWeight: 700, color: 'var(--text-secondary)', flexShrink: 0, transition: 'border-color 0.3s' }}>
-            {profile.avatar_url ? <img src={profile.avatar_url} alt={profile.first_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : profile.first_name?.[0]?.toUpperCase()}
+            {/* Identité : nom + badge + ville + ancienneté */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <h2 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 24, color: 'var(--text)', margin: 0, lineHeight: 1.1 }}>
+                  {profile.first_name}
+                </h2>
+                {profile.is_verified && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, fontWeight: 700, color: 'var(--green)', background: 'rgba(61,219,130,0.12)', border: '1px solid rgba(61,219,130,0.35)', borderRadius: 999, padding: '3px 9px' }}>
+                    Vérifié ✓
+                  </span>
+                )}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6, flexWrap: 'wrap' }}>
+                {profile.city && <span style={{ fontSize: 13, color: 'var(--text-secondary)', display: 'inline-flex', alignItems: 'center', gap: 4 }}><MapPin size={13} /> {profile.city}</span>}
+                {profile.is_premium && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, fontWeight: 700, color: 'var(--accent-text)', background: 'rgba(232,255,71,0.12)', border: '1px solid var(--accent-border)', borderRadius: 999, padding: '2px 8px' }}>
+                    Premium ⭐
+                  </span>
+                )}
+              </div>
+              <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: '5px 0 0' }}>Membre depuis {joinedDate}</p>
+            </div>
           </div>
 
-          {/* Nom */}
-          <div style={{ textAlign: 'center' }}>
-            <h2 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 24, color: 'var(--text)', margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
-              {profile.first_name}
-              {profile.is_verified && <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--green)', border: '1px solid var(--green)', borderRadius: 999, padding: '2px 8px' }}>Vérifié ✓</span>}
-              {profile.is_premium && <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', border: '1px solid var(--accent)', borderRadius: 999, padding: '2px 8px' }}>Premium ⭐</span>}
-            </h2>
-            {profile.city && <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 6 }}>📍 {profile.city}</p>}
-            <p style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 4 }}>Membre depuis {joinedDate}</p>
-          </div>
+          {/* Bio */}
+          {profile.bio && (
+            <div style={{ marginTop: 20 }}>
+              <SectionLabel mb={14}>Bio</SectionLabel>
+              <p style={{ fontSize: 15, color: 'var(--text)', margin: 0, lineHeight: 1.55 }}>
+                {profile.bio}
+              </p>
+            </div>
+          )}
 
-          {/* Stats */}
-          <div style={{ display: 'flex', background: 'var(--surface2)', borderRadius: 18, border: '1px solid var(--border-color)', overflow: 'hidden', width: '100%', maxWidth: 300 }}>
-            <StatItem value={profile.friends_count ?? 0} label="amis" />
-            <div style={{ width: 1, background: 'var(--border-color)' }} />
-            <StatItem value={profile.events_count ?? 0} label="sorties" />
-            <div style={{ width: 1, background: 'var(--border-color)' }} />
-            <StatItem value={totalBadges} label="badges" />
+          {/* Stats — centrées, sans fond, séparées par des barres verticales */}
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 28, marginTop: 24 }}>
+            <StatItem value={profile.friends_count ?? 0} label="Amis" />
+            <div style={{ width: 1, height: 36, background: 'var(--border-color)' }} />
+            <StatItem value={profile.events_count ?? 0} label="Sorties" />
+            <div style={{ width: 1, height: 36, background: 'var(--border-color)' }} />
+            <StatItem value={totalBadges} label="Badges" />
           </div>
 
           {/* Boutons ami + MP */}
           {friendError && (
-            <p style={{ fontSize: 13, color: 'var(--orange)', fontFamily: 'DM Sans, sans-serif', textAlign: 'center', margin: '0 0 8px' }}>
+            <p style={{ fontSize: 13, color: 'var(--orange)', fontFamily: 'DM Sans, sans-serif', textAlign: 'center', margin: '20px 0 0' }}>
               {friendError}
             </p>
           )}
-          <div style={{ display: 'flex', gap: 8, width: '100%', maxWidth: 300 }}>
+          <div style={{ display: 'flex', gap: 8, marginTop: friendError ? 8 : 22 }}>
             <div style={{ flex: 1 }}>
               <FriendButton status={status} loading={actionLoading} onAction={handleFriendAction} />
             </div>
@@ -194,24 +239,16 @@ export default function UserProfilePage() {
           </div>
         </div>
 
-        {/* ── Bio ── */}
-        {profile.bio && (
-          <div style={{ padding: '0 24px 28px' }}>
-            <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.65, fontStyle: 'italic', background: 'var(--surface2)', border: '1px solid var(--border-color)', borderRadius: 18, padding: '16px 20px', margin: 0 }}>
-              "{profile.bio}"
-            </p>
-          </div>
-        )}
-
         {/* ── Badges cliquables ── */}
         {allBadges.length > 0 && (
-          <div style={{ padding: '0 24px 28px' }}>
-            <SectionLabel>Badges — tape pour en donner un</SectionLabel>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ padding: '10px 24px 28px' }}>
+            <SectionLabel mb={14}>Badges</SectionLabel>
+            <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
               {allBadges.map(b => {
                 const earned = badges.find(ub => ub.id === b.id)
                 const given = badgesGiven.includes(b.id)
                 const isLoading = badgeLoading === b.id
+                const highlight = given || earned
                 return (
                   <button
                     key={b.id}
@@ -220,23 +257,24 @@ export default function UserProfilePage() {
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 7,
-                      background: given ? 'rgba(232,255,71,0.1)' : (earned ? 'var(--surface2)' : 'var(--surface2)'),
-                      border: `1.5px solid ${given ? 'rgba(232,255,71,0.4)' : 'var(--border-color)'}`,
+                      gap: 5,
+                      background: highlight ? 'rgba(232,255,71,0.08)' : 'var(--surface2)',
+                      border: `1px solid ${given ? 'rgba(232,255,71,0.5)' : (earned ? 'rgba(232,255,71,0.3)' : 'var(--border-color)')}`,
                       borderRadius: 999,
-                      padding: '8px 14px',
+                      padding: '6px 11px',
                       cursor: badgeLoading ? 'not-allowed' : 'pointer',
-                      opacity: (badgeLoading && !isLoading) ? 0.5 : 1,
+                      opacity: (badgeLoading && !isLoading) ? 0.5 : (highlight ? 1 : 0.5),
+                      boxShadow: highlight ? '0 0 12px rgba(232,255,71,0.25)' : 'none',
                       transition: 'all 0.15s',
                       fontFamily: 'DM Sans, sans-serif',
                     }}
                   >
-                    <span style={{ fontSize: 18 }}>{b.emoji}</span>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: given ? 'var(--accent)' : 'var(--text-secondary)' }}>
+                    <span style={{ fontSize: 14 }}>{b.emoji}</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: highlight ? 'var(--accent)' : 'var(--text-secondary)' }}>
                       {isLoading ? '…' : b.name}
                     </span>
                     {earned && (
-                      <span style={{ fontSize: 11, fontWeight: 700, color: given ? 'var(--accent)' : 'var(--text-tertiary)', background: 'var(--bg)', borderRadius: 999, padding: '1px 6px', marginLeft: 2 }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent)', background: 'var(--bg)', borderRadius: 999, padding: '0 5px', marginLeft: 1, fontFamily: 'Syne, sans-serif' }}>
                         {earned.count}
                       </span>
                     )}
@@ -245,40 +283,15 @@ export default function UserProfilePage() {
               })}
             </div>
             <p style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 10 }}>
-              Tap pour donner · re-tap pour retirer · sortie commune requise
+              Tap pour donner · re-tap pour retirer ·
             </p>
-          </div>
-        )}
-
-        {/* ── Succès ── */}
-        {achievements.length > 0 && (
-          <div style={{ padding: '0 24px 28px' }}>
-            <SectionLabel>Succès</SectionLabel>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {achievements.map(a => (
-                <div
-                  key={a.key}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 7,
-                    background: 'rgba(61,219,130,0.07)',
-                    border: '1.5px solid rgba(61,219,130,0.25)',
-                    borderRadius: 999, padding: '7px 14px',
-                  }}
-                >
-                  <span style={{ fontSize: 16 }}>{a.emoji}</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--green)', fontFamily: 'DM Sans, sans-serif' }}>
-                    {a.name}
-                  </span>
-                </div>
-              ))}
-            </div>
           </div>
         )}
 
         {/* ── Photos ── */}
         {photos.length > 0 && (
           <div style={{ padding: '0 24px 28px' }}>
-            <SectionLabel>Photos</SectionLabel>
+            <SectionLabel mb={14}>Photos</SectionLabel>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4 }}>
               {photos.map((photo, i) => (
                 <button
@@ -302,7 +315,7 @@ export default function UserProfilePage() {
         {/* ── Intérêts ── */}
         {profile.interests?.length > 0 && (
           <div style={{ padding: '0 24px 28px' }}>
-            <SectionLabel>Centres d'intérêt</SectionLabel>
+            <SectionLabel mb={14}>Centres d'intérêt</SectionLabel>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {profile.interests.map(interest => (
                 <span key={interest.id} style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', background: 'var(--surface2)', border: '1px solid var(--border-color)', borderRadius: 999, padding: '6px 14px' }}>
@@ -313,10 +326,72 @@ export default function UserProfilePage() {
           </div>
         )}
 
+        {/* ── Sorties (souvenirs de l'utilisateur) ── */}
+        {eventsHistory.length > 0 && (
+          <div style={{ padding: '0 0 28px' }}>
+            <div style={{ padding: '0 24px' }}><SectionLabel mb={14}>Sorties récentes</SectionLabel></div>
+            <div className="nearly-hscroll" style={{ display: 'flex', gap: 12, overflowX: 'auto', padding: '0 24px 6px' }}>
+              {eventsHistory.map(event => {
+                const cat = getCat(event.category)
+                return (
+                  <button
+                    key={event.id}
+                    onClick={() => setSouvenirEventId(event.id)}
+                    style={{
+                      flex: '0 0 150px', width: 150, height: 78, position: 'relative',
+                      background: event.cover_url ? 'var(--surface2)' : `linear-gradient(135deg, ${cat.color}45, ${cat.color}14)`,
+                      border: `1px solid ${event.cover_url ? 'var(--border-color)' : cat.color + '33'}`,
+                      borderRadius: 14, overflow: 'hidden', padding: 0, cursor: 'pointer', textAlign: 'left',
+                    }}
+                  >
+                    {event.cover_url && <img src={event.cover_url} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />}
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.75), rgba(0,0,0,0.05) 62%)' }} />
+                    <span style={{ position: 'absolute', top: 7, right: 8, fontSize: 13 }}>{cat.emoji}</span>
+                    <div style={{ position: 'absolute', left: 10, right: 10, bottom: 8 }}>
+                      <p style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 12.5, color: '#fff', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {event.title}
+                      </p>
+                      <p style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.72)', margin: '2px 0 0' }}>
+                        {new Date(event.starts_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </p>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── Succès (en bas, discret) ── */}
+        {achievements.length > 0 && (
+          <div style={{ padding: '0 24px 28px' }}>
+            <SectionLabel mb={14}>Succès</SectionLabel>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {achievements.map(a => (
+                <div
+                  key={a.key}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 7,
+                    background: 'rgba(61,219,130,0.07)',
+                    border: '1.5px solid rgba(61,219,130,0.25)',
+                    borderRadius: 999, padding: '7px 14px',
+                  }}
+                >
+                  <span style={{ fontSize: 16 }}>{a.emoji}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--green)', fontFamily: 'DM Sans, sans-serif' }}>
+                    {a.name}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Bannière demande reçue */}
         {status === 'request_received' && (
-          <div style={{ margin: '0 24px 28px', background: 'rgba(232,255,71,0.06)', border: '1px solid rgba(232,255,71,0.2)', borderRadius: 14, padding: '14px 16px', fontSize: 13, color: 'var(--text-secondary)' }}>
-            👋 <strong style={{ color: 'var(--accent)' }}>{profile.first_name}</strong> t'a envoyé une demande d'ami
+          <div style={{ margin: '0 24px 28px', background: 'rgba(232,255,71,0.06)', border: '1px solid rgba(232,255,71,0.2)', borderRadius: 14, padding: '14px 16px', fontSize: 13, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <UserPlus size={16} color="var(--accent-text)" style={{ flexShrink: 0 }} />
+            <span><strong style={{ color: 'var(--accent)' }}>{profile.first_name}</strong> t'a envoyé une demande d'ami</span>
           </div>
         )}
       </div>
@@ -328,6 +403,16 @@ export default function UserProfilePage() {
           initialIndex={viewerIndex}
           onClose={() => setViewerIndex(null)}
           onLike={handleLike}
+        />
+      )}
+
+      {/* Récap souvenir d'une sortie de cet utilisateur */}
+      {souvenirEventId && (
+        <SouvenirModal
+          eventId={souvenirEventId}
+          ownerId={id}
+          ownerName={profile.first_name}
+          onClose={() => setSouvenirEventId(null)}
         />
       )}
 
@@ -431,18 +516,10 @@ function PhotoViewer({ photos, initialIndex, onClose, onLike }) {
 
 function StatItem({ value, label }) {
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '14px 8px' }}>
-      <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 22, color: 'var(--accent)', lineHeight: 1 }}>{value}</span>
-      <span style={{ fontSize: 10, color: 'var(--text-tertiary)', marginTop: 4 }}>{label}</span>
+    <div style={{ textAlign: 'center' }}>
+      <span style={{ display: 'block', fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 28, color: 'var(--accent-text)', lineHeight: 1 }}>{value}</span>
+      <span style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginTop: 7 }}>{label}</span>
     </div>
-  )
-}
-
-function SectionLabel({ children }) {
-  return (
-    <p style={{ fontSize: 10, fontFamily: 'Syne, sans-serif', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-tertiary)', marginBottom: 14 }}>
-      {children}
-    </p>
   )
 }
 

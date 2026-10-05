@@ -159,7 +159,8 @@ async def logout(
     if not refresh_token and data:
         refresh_token = data.refresh_token
 
-    if access_token:
+    # Révoquer ce qu'on a — même un refresh seul (cookie access expiré après 1 h)
+    if access_token or refresh_token:
         await logout_user(redis, access_token, refresh_token)
 
     _clear_auth_cookies(response)
@@ -167,7 +168,9 @@ async def logout(
 
 
 @router.get("/verify-email", response_model=MessageResponse)
+@limiter.limit("10/minute")
 async def verify_email_endpoint(
+    request: Request,
     token: str,
     db: AsyncSession = Depends(get_db),
 ):
@@ -201,7 +204,9 @@ async def forgot_password_endpoint(
 
 
 @router.post("/reset-password", response_model=MessageResponse)
+@limiter.limit("5/minute")
 async def reset_password_endpoint(
+    request: Request,
     data: ResetPasswordRequest,
     db: AsyncSession = Depends(get_db),
 ):

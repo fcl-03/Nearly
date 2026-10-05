@@ -24,6 +24,7 @@ from app.services.business import (
     get_business_account,
     get_business_stats,
     list_sponsored_events,
+    to_business_response,
     update_business_account,
 )
 
@@ -40,7 +41,7 @@ async def create_account(
 ):
     """Crée un compte entreprise pour l'utilisateur connecté."""
     account = await create_business_account(db, current_user, data)
-    return account
+    return await to_business_response(db, account)
 
 
 @router.get("/me", response_model=BusinessResponse)
@@ -49,7 +50,8 @@ async def get_my_account(
     current_user: User = Depends(get_current_user),
 ):
     """Retourne le compte entreprise de l'utilisateur connecté."""
-    return await get_business_account(db, current_user.id)
+    account = await get_business_account(db, current_user.id)
+    return await to_business_response(db, account)
 
 
 @router.put("/me", response_model=BusinessResponse)
@@ -59,7 +61,8 @@ async def update_my_account(
     current_user: User = Depends(get_current_user),
 ):
     """Met à jour les informations de l'établissement."""
-    return await update_business_account(db, current_user.id, data)
+    account = await update_business_account(db, current_user.id, data)
+    return await to_business_response(db, account)
 
 
 @router.get("/me/stats", response_model=BusinessStatsResponse)
@@ -127,7 +130,11 @@ async def admin_list_accounts(
     _: User = Depends(get_current_admin),
 ):
     """Liste tous les comptes business (admin)."""
+    from sqlalchemy import func
     from sqlalchemy.orm import selectinload
+
+    from app.models.business import BusinessSponsoredEvent
+    from app.services.business import current_month_start
 
     result = await db.execute(
         select(BusinessAccount)
@@ -135,6 +142,15 @@ async def admin_list_accounts(
         .order_by(BusinessAccount.created_at.desc())
     )
     accounts = result.scalars().all()
+
+    # Usage mensuel de chaque compte en une seule requête groupée
+    counts_result = await db.execute(
+        select(BusinessSponsoredEvent.business_id, func.count())
+        .where(BusinessSponsoredEvent.created_at >= current_month_start())
+        .group_by(BusinessSponsoredEvent.business_id)
+    )
+    used_by_account = dict(counts_result.all())
+
     return [
         BusinessAdminResponse(
             id=a.id,
@@ -144,7 +160,7 @@ async def admin_list_accounts(
             plan=a.plan,
             city=a.city,
             is_active=a.is_active,
-            sponsored_events_used=a.sponsored_events_used,
+            sponsored_events_used=used_by_account.get(a.id, 0),
             created_at=a.created_at,
         )
         for a in accounts
@@ -189,6 +205,5 @@ async def admin_change_plan(
         raise HTTPException(status_code=400, detail=f"Plan invalide. Choix : {', '.join(PLAN_LIMITS.keys())}")
 
     account.plan = new_plan
-    account.sponsored_events_limit = PLAN_LIMITS[new_plan]
     await db.commit()
     return MessageResponse(message=f"Plan de {account.business_name} mis à jour : {new_plan}")

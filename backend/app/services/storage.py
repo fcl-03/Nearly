@@ -122,6 +122,11 @@ def photo_key(user_id: str, photo_id: str) -> str:
     return f"photos/{user_id}/{photo_id}.jpg"
 
 
+def cover_key(user_id: str, event_id: str) -> str:
+    """Retourne la clé S3 pour la photo souvenir d'un participant sur une sortie."""
+    return f"covers/{event_id}/{user_id}.jpg"
+
+
 # ─── Bucket privé (documents sensibles) ───────────────────────────────────────
 
 # Types MIME acceptés pour les documents d'identité

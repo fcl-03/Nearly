@@ -84,6 +84,9 @@ async def login_user(
 
     # Stocker le refresh JTI en Redis pour pouvoir le révoquer
     await redis.setex(f"refresh:{refresh_jti}", REFRESH_TTL_SECONDS, str(user.id))
+    # L'indexer par utilisateur (révocation de toutes les sessions au reset/ban)
+    from app.core.redis import track_refresh_token
+    await track_refresh_token(str(user.id), refresh_jti, REFRESH_TTL_SECONDS)
 
     return TokenResponse(access_token=access_token, refresh_token=refresh_token), user
 
@@ -119,19 +122,26 @@ async def refresh_tokens(redis, refresh_token_str: str) -> TokenResponse:
     new_access, _ = create_access_token(user_id)
     new_refresh, new_refresh_jti = create_refresh_token(user_id)
     await redis.setex(f"refresh:{new_refresh_jti}", REFRESH_TTL_SECONDS, user_id)
+    from app.core.redis import track_refresh_token
+    await track_refresh_token(user_id, new_refresh_jti, REFRESH_TTL_SECONDS)
+    # Retirer l'ancien jti de l'index (déjà révoqué par la rotation)
+    await redis.srem(f"user_refresh:{user_id}", jti)
 
     return TokenResponse(access_token=new_access, refresh_token=new_refresh)
 
 
-async def logout_user(redis, access_token_str: str, refresh_token_str: str | None) -> None:
-    """Révoque l'access token (blacklist) et le refresh token (suppression Redis)."""
+async def logout_user(redis, access_token_str: str | None, refresh_token_str: str | None) -> None:
+    """Révoque l'access token (blacklist) et le refresh token (suppression Redis).
+    Chaque token est révoqué indépendamment — un logout avec le seul refresh
+    (cookie access expiré) doit quand même tuer la session."""
     # Blacklister l'access token jusqu'à son expiration
-    payload = decode_token(access_token_str)
-    if payload:
-        exp = payload.get("exp", 0)
-        ttl = max(1, int(exp - datetime.now(timezone.utc).timestamp()))
-        from app.core.redis import ban_token
-        await ban_token(payload["jti"], ttl)
+    if access_token_str:
+        payload = decode_token(access_token_str)
+        if payload:
+            exp = payload.get("exp", 0)
+            ttl = max(1, int(exp - datetime.now(timezone.utc).timestamp()))
+            from app.core.redis import ban_token
+            await ban_token(payload["jti"], ttl)
 
     # Révoquer le refresh token s'il est fourni
     if refresh_token_str:
@@ -205,6 +215,11 @@ async def reset_password(db: AsyncSession, redis, token: str, new_password: str)
     # Supprimer le token utilisé
     await redis.delete(f"password_reset:{token}")
 
+    # Révoquer toutes les sessions existantes : si le compte était compromis,
+    # l'attaquant ne doit pas rester connecté après le reset.
+    from app.core.redis import revoke_user_refresh_tokens
+    await revoke_user_refresh_tokens(str(user.id))
+
 
 async def change_password(
     db: AsyncSession, user: User, current_password: str, new_password: str
@@ -218,6 +233,11 @@ async def change_password(
 
     user.password_hash = hash_password(new_password)
     await db.commit()
+
+    # Révoquer les autres sessions (mêmes raisons que reset_password) ;
+    # l'access token courant reste valide jusqu'à expiration (≤ 30 min).
+    from app.core.redis import revoke_user_refresh_tokens
+    await revoke_user_refresh_tokens(str(user.id))
 
 
 async def resend_verification(db: AsyncSession, redis, user: User) -> str:

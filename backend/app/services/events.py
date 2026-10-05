@@ -293,6 +293,16 @@ async def update_event(
         )
 
     update_data = data.model_dump(exclude_unset=True)
+
+    # Règle métier : le nombre de participants n'est PAS modifiable après publication
+    # (petit groupe figé à la création — cf CLAUDE.md).
+    new_max = update_data.pop("max_participants", None)
+    if new_max is not None and new_max != event.max_participants:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Le nombre de participants n'est pas modifiable après publication.",
+        )
+
     for field, value in update_data.items():
         setattr(event, field, value)
 
@@ -333,6 +343,13 @@ async def join_event(
 
     if not event or not event.is_active:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sortie introuvable")
+
+    # Règle métier : identité vérifiée obligatoire pour rejoindre (comme pour créer)
+    if not user.is_verified and not user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tu dois vérifier ton identité avant de rejoindre une sortie.",
+        )
 
     # Vérifier le blocage avec le créateur
     from app.services.friendships import is_blocked
@@ -840,3 +857,215 @@ async def reject_join_request(
         related_id=str(event.id),
     )
     await db.commit()
+
+
+# ─── Sorties "souvenirs" : historique + photo de couverture personnelle ────────
+
+async def get_my_events_history(
+    db: AsyncSession, user_id: uuid.UUID, only_past: bool = False
+) -> list[dict]:
+    """Retourne toutes les sorties rejointes (joined) par l'utilisateur, passées comprises,
+    triées de la plus récente à la plus ancienne, avec SA photo souvenir si présente.
+
+    only_past : ne renvoie que les sorties déjà passées — obligatoire quand on consulte
+    le profil de quelqu'un d'autre (ne jamais exposer où une personne SERA)."""
+    stmt = (
+        select(Event, EventParticipant.cover_url)
+        .join(EventParticipant, EventParticipant.event_id == Event.id)
+        .where(
+            EventParticipant.user_id == user_id,
+            EventParticipant.status == "joined",
+        )
+        .order_by(Event.starts_at.desc())
+    )
+    if only_past:
+        stmt = stmt.where(Event.starts_at < datetime.now(timezone.utc))
+    result = await db.execute(stmt)
+    history = []
+    for event, cover_url in result.all():
+        history.append({
+            "id": str(event.id),
+            "title": event.title,
+            "category": event.category,
+            "location_name": event.location_name,
+            "starts_at": event.starts_at.isoformat(),
+            "cover_url": cover_url,
+            "is_past": event.starts_at < datetime.now(timezone.utc),
+        })
+    return history
+
+
+async def _get_my_participation(
+    db: AsyncSession, user: User, event_id: uuid.UUID
+) -> EventParticipant:
+    """Récupère la participation 'joined' de l'utilisateur, ou 404."""
+    result = await db.execute(
+        select(EventParticipant).where(
+            EventParticipant.event_id == event_id,
+            EventParticipant.user_id == user.id,
+            EventParticipant.status == "joined",
+        )
+    )
+    participation = result.scalar_one_or_none()
+    if not participation:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Tu dois avoir participé à cette sortie pour y ajouter une photo souvenir.",
+        )
+    return participation
+
+
+async def set_event_cover(
+    db: AsyncSession, user: User, event_id: uuid.UUID, file_bytes: bytes, content_type: str
+) -> str:
+    """Définit la photo souvenir personnelle du participant pour une sortie. Retourne l'URL."""
+    from app.services.storage import (
+        ALLOWED_AVATAR_TYPES,
+        cover_key,
+        process_photo,
+        upload_public_file,
+    )
+
+    if content_type not in ALLOWED_AVATAR_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Type de fichier non supporté. Acceptés : {', '.join(ALLOWED_AVATAR_TYPES)}",
+        )
+    if len(file_bytes) > 8 * 1024 * 1024:  # 8 Mo max
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="Fichier trop volumineux. Maximum 8 Mo.",
+        )
+
+    participation = await _get_my_participation(db, user, event_id)
+
+    processed = await process_photo(file_bytes)
+    key = cover_key(str(user.id), str(event_id))
+    url = await upload_public_file(key, processed, "image/jpeg")
+    # Cache-buster : la clé S3 est fixe (covers/{event_id}/{user_id}.jpg), donc en cas de
+    # remplacement l'URL serait identique → navigateur/CDN serviraient l'ancienne image.
+    url = f"{url}?v={int(datetime.now(timezone.utc).timestamp())}"
+
+    participation.cover_url = url
+    await db.commit()
+    return url
+
+
+async def remove_event_cover(db: AsyncSession, user: User, event_id: uuid.UUID) -> None:
+    """Supprime la photo souvenir personnelle du participant pour une sortie."""
+    from app.services.storage import cover_key, delete_public_file
+
+    participation = await _get_my_participation(db, user, event_id)
+    if not participation.cover_url:
+        return
+
+    await delete_public_file(cover_key(str(user.id), str(event_id)))
+    participation.cover_url = None
+    await db.commit()
+
+
+async def notify_event_souvenirs(db: AsyncSession) -> int:
+    """Notifie les participants des sorties terminées depuis quelques heures pour qu'ils
+    ajoutent leur photo souvenir. Envoyé une seule fois par sortie (flag cover_prompt_sent).
+
+    Fenêtre : sorties commencées entre 24h et 4h avant maintenant — on évite ainsi de
+    notifier rétroactivement les très vieilles sorties au premier passage.
+    """
+    from app.services.notifications import create_notification
+
+    now = datetime.now(timezone.utc)
+    window_start = now - timedelta(hours=24)
+    window_end = now - timedelta(hours=4)
+
+    result = await db.execute(
+        select(Event).where(
+            Event.cover_prompt_sent == False,  # noqa: E712
+            Event.starts_at >= window_start,
+            Event.starts_at < window_end,
+        )
+    )
+    events = result.scalars().all()
+
+    notified = 0
+    for event in events:
+        participants = await db.execute(
+            select(EventParticipant.user_id).where(
+                EventParticipant.event_id == event.id,
+                EventParticipant.status == "joined",
+            )
+        )
+        for (user_id,) in participants.all():
+            await create_notification(
+                db,
+                user_id=user_id,
+                type="cover_prompt",
+                content=f"Comment était « {event.title} » ? Immortalise le moment : ajoute ta photo souvenir.",
+                related_id=str(event.id),
+            )
+            notified += 1
+        event.cover_prompt_sent = True
+
+    if events:
+        await db.commit()
+    return notified
+
+
+async def get_event_souvenir(
+    db: AsyncSession,
+    viewer: User,
+    event_id: uuid.UUID,
+    owner_id: uuid.UUID | None = None,
+) -> dict:
+    """Récap 'souvenir' d'une sortie (même désactivée) : infos + participants + photo de l'owner.
+
+    owner_id = à qui appartient la cover affichée (le profil consulté). Par défaut le viewer.
+    Accès : l'owner doit avoir participé (joined) ; si viewer != owner, pas de blocage entre eux.
+    """
+    owner_id = owner_id or viewer.id
+
+    result = await db.execute(
+        select(Event)
+        .where(Event.id == event_id)
+        .options(selectinload(Event.participants).selectinload(EventParticipant.user))
+    )
+    event = result.scalar_one_or_none()
+    if not event:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Souvenir introuvable")
+
+    owner_participation = next(
+        (p for p in event.participants if p.user_id == owner_id and p.status == "joined"),
+        None,
+    )
+    if not owner_participation:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Souvenir introuvable")
+
+    if viewer.id != owner_id:
+        from app.services.friendships import is_blocked
+        if await is_blocked(db, viewer.id, owner_id):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Souvenir introuvable")
+        # Sécurité : le souvenir d'autrui n'existe que pour une sortie passée —
+        # ne jamais révéler le lieu/participants d'une sortie où la personne SERA.
+        if event.starts_at >= datetime.now(timezone.utc):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Souvenir introuvable")
+
+    joined = [p for p in event.participants if p.status == "joined"]
+    return {
+        "id": str(event.id),
+        "title": event.title,
+        "description": event.description,
+        "category": event.category,
+        "location_name": event.location_name,
+        "latitude": event.latitude,
+        "longitude": event.longitude,
+        "starts_at": event.starts_at.isoformat(),
+        "cover_url": owner_participation.cover_url,
+        "participants_count": len(joined),
+        "participants": [
+            {
+                "id": str(p.user_id),
+                "first_name": p.user.first_name,
+                "avatar_url": p.user.avatar_url,
+            }
+            for p in joined
+        ],
+    }

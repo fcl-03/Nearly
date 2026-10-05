@@ -82,7 +82,7 @@ export default function TermsPage() {
         {/* Article 1 */}
         <h2 style={sectionTitle}>1. Objet du service</h2>
         <p style={body}>
-          Nearly est une application sociale permettant à des personnes majeures (18 ans et plus) d'organiser et de participer à des sorties informelles en petits groupes (3 à 6 personnes) dans les villes françaises. Le service comprend :
+          Nearly est une application sociale permettant à des personnes majeures (18 ans et plus) d'organiser et de participer à des sorties informelles en petits groupes (2 à 6 personnes) dans les villes françaises. Le service comprend :
         </p>
         <ul style={{ paddingLeft: 20, margin: '0 0 12px' }}>
           <li style={li}>La création et la consultation de sorties géolocalisées</li>

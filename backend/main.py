@@ -45,13 +45,19 @@ async def _cleanup_loop() -> None:
                     logger.info("Auto-désactivation : %d sorties passées", result.rowcount)
                 await db.commit()
 
-                # 2. Supprimer les messages des chats expirés (7 jours après la sortie)
+                # 2. Notifier les participants des sorties terminées pour leur photo souvenir
+                from app.services.events import notify_event_souvenirs
+                souvenir_count = await notify_event_souvenirs(db)
+                if souvenir_count > 0:
+                    logger.info("Souvenirs : %d participants notifiés", souvenir_count)
+
+                # 3. Supprimer les messages des chats expirés (7 jours après la sortie)
                 from app.services.messages import cleanup_expired_event_chats
                 count = await cleanup_expired_event_chats(db)
                 if count > 0:
                     logger.info("Nettoyage des chats : %d messages supprimés", count)
 
-                # 3. Générer les snapshots analytiques quotidiens (données anonymisées)
+                # 4. Générer les snapshots analytiques quotidiens (données anonymisées)
                 from app.services.analytics import generate_daily_snapshot
                 snap_count = await generate_daily_snapshot(db)
                 if snap_count > 0:

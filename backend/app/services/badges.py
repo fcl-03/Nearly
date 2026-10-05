@@ -71,6 +71,11 @@ async def give_badge(
     if not receiver or receiver.is_banned:
         raise HTTPException(status_code=404, detail="Utilisateur introuvable")
 
+    # Pas de badge (ni de notif) entre utilisateurs bloqués
+    from app.services.friendships import is_blocked
+    if await is_blocked(db, giver.id, receiver_id):
+        raise HTTPException(status_code=404, detail="Utilisateur introuvable")
+
     # Vérifier une sortie commune (event_id pour la contrainte)
     shared_event_result = await db.execute(
         select(EventParticipant.event_id)

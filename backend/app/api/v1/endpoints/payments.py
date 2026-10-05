@@ -153,12 +153,16 @@ async def _handle_event(db: AsyncSession, event: dict) -> None:
             await _set_premium(db, customer_id, active=True, period_end=None)
 
     elif event_type in ("customer.subscription.updated", "invoice.payment_succeeded"):
-        # Renouvellement — mettre à jour premium_until
+        # Renouvellement — mettre à jour premium_until.
+        # subscription.updated arrive aussi pour past_due/unpaid/canceled :
+        # ne réactiver le premium que si l'abonnement est réellement actif.
         customer_id = data.get("customer")
         period_end = data.get("current_period_end")
+        sub_status = data.get("status")  # absent sur les events invoice.*
+        is_active = sub_status in (None, "active", "trialing")
         if customer_id:
             end_dt = datetime.fromtimestamp(period_end, tz=timezone.utc) if period_end else None
-            await _set_premium(db, customer_id, active=True, period_end=end_dt)
+            await _set_premium(db, customer_id, active=is_active, period_end=end_dt if is_active else None)
 
     elif event_type in ("customer.subscription.deleted", "customer.subscription.paused"):
         # Résiliation ou pause

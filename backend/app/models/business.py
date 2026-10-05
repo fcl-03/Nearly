@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -32,10 +32,8 @@ class BusinessAccount(Base):
     stripe_customer_id: Mapped[str | None] = mapped_column(String(100), unique=True, nullable=True)
     stripe_subscription_id: Mapped[str | None] = mapped_column(String(100), unique=True, nullable=True)
 
-    # Limites liées au plan
-    # starter=3, pro=10, exclusif=illimité (None)
-    sponsored_events_limit: Mapped[int | None] = mapped_column(Integer, nullable=True, default=3)
-    sponsored_events_used: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    # Limites de sorties sponsorisées : calculées dynamiquement (PLAN_LIMITS +
+    # COUNT des business_sponsored_events du mois courant) — rien de stocké ici.
 
     # Statut
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
