@@ -1,0 +1,8 @@
+# Caddy = reverse proxy + HTTPS automatique (Let's Encrypt).
+# Le domaine est injecté via la variable d'environnement DOMAIN (fichier .env).
+# Tout le trafic est transmis au conteneur frontend (nginx), qui sert la PWA
+# et route lui-même /api, /ws et /dev-static vers le backend.
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy frontend:80
+}
