@@ -11,8 +11,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['vite.svg'],
       manifest: {
-        name: 'Nearly',
-        short_name: 'Nearly',
+        name: 'Jowen',
+        short_name: 'Jowen',
         description: 'Sorties spontanées entre amis',
         theme_color: '#0B0D11',
         background_color: '#0B0D11',

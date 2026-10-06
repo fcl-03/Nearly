@@ -73,7 +73,7 @@ export default function TermsPage() {
         <div style={{ height: 1, background: 'var(--border-color)', margin: '8px 0' }} />
 
         <p style={body}>
-          Les présentes Conditions Générales d'Utilisation (ci-après « CGU ») régissent l'accès et l'utilisation de l'application Nearly (ci-après « l'Application »), éditée par Nearly SAS. En utilisant l'Application, vous acceptez les présentes CGU dans leur intégralité.
+          Les présentes Conditions Générales d'Utilisation (ci-après « CGU ») régissent l'accès et l'utilisation de l'application Jowen (ci-après « l'Application »), éditée par Jowen SAS. En utilisant l'Application, vous acceptez les présentes CGU dans leur intégralité.
         </p>
         <p style={body}>
           Les CGU complètent la Politique de confidentialité & Charte disponible dans l'Application. En cas de contradiction, les présentes CGU prévalent pour les aspects relatifs à l'utilisation du service.
@@ -82,7 +82,7 @@ export default function TermsPage() {
         {/* Article 1 */}
         <h2 style={sectionTitle}>1. Objet du service</h2>
         <p style={body}>
-          Nearly est une application sociale permettant à des personnes majeures (18 ans et plus) d'organiser et de participer à des sorties informelles en petits groupes (2 à 6 personnes) dans les villes françaises. Le service comprend :
+          Jowen est une application sociale permettant à des personnes majeures (18 ans et plus) d'organiser et de participer à des sorties informelles en petits groupes (2 à 6 personnes) dans les villes françaises. Le service comprend :
         </p>
         <ul style={{ paddingLeft: 20, margin: '0 0 12px' }}>
           <li style={li}>La création et la consultation de sorties géolocalisées</li>
@@ -96,7 +96,7 @@ export default function TermsPage() {
         {/* Article 2 */}
         <h2 style={sectionTitle}>2. Inscription et compte</h2>
         <h3 style={subTitle}>2.1 Conditions d'inscription</h3>
-        <p style={body}>Pour créer un compte Nearly, vous devez :</p>
+        <p style={body}>Pour créer un compte Jowen, vous devez :</p>
         <ul style={{ paddingLeft: 20, margin: '0 0 12px' }}>
           <li style={li}>Être âgé(e) d'au moins 18 ans</li>
           <li style={li}>Fournir un prénom et une adresse e-mail valides</li>
@@ -106,7 +106,7 @@ export default function TermsPage() {
 
         <h3 style={subTitle}>2.2 Responsabilité du compte</h3>
         <p style={body}>
-          Vous êtes seul(e) responsable de la confidentialité de vos identifiants de connexion et de toute activité effectuée depuis votre compte. En cas de suspicion d'utilisation frauduleuse, vous devez nous contacter immédiatement à <a href="mailto:contact@nearly.app" style={{ color: 'var(--accent)', textDecoration: 'none' }}>contact@nearly.app</a>.
+          Vous êtes seul(e) responsable de la confidentialité de vos identifiants de connexion et de toute activité effectuée depuis votre compte. En cas de suspicion d'utilisation frauduleuse, vous devez nous contacter immédiatement à <a href="mailto:contact@jowen.fr" style={{ color: 'var(--accent)', textDecoration: 'none' }}>contact@jowen.fr</a>.
         </p>
 
         <h3 style={subTitle}>2.3 Vérification de l'email</h3>
@@ -118,7 +118,7 @@ export default function TermsPage() {
         <h2 style={sectionTitle}>3. Règles de conduite</h2>
         <div style={highlight}>
           <p style={{ ...body, margin: 0, fontWeight: 700, color: 'var(--text)' }}>
-            Nearly est un espace bienveillant. Le non-respect des règles ci-dessous peut entraîner la suspension ou la suppression définitive de votre compte.
+            Jowen est un espace bienveillant. Le non-respect des règles ci-dessous peut entraîner la suspension ou la suppression définitive de votre compte.
           </p>
         </div>
 
@@ -137,7 +137,7 @@ export default function TermsPage() {
 
         <h3 style={subTitle}>3.2 Contenu publié</h3>
         <p style={body}>
-          Vous êtes responsable de tout contenu que vous publiez sur Nearly (photos de profil, descriptions de sorties, messages, etc.). Vous garantissez que ce contenu ne porte pas atteinte aux droits de tiers et respecte la législation en vigueur.
+          Vous êtes responsable de tout contenu que vous publiez sur Jowen (photos de profil, descriptions de sorties, messages, etc.). Vous garantissez que ce contenu ne porte pas atteinte aux droits de tiers et respecte la législation en vigueur.
         </p>
 
         <h3 style={subTitle}>3.3 Signalement</h3>
@@ -149,18 +149,18 @@ export default function TermsPage() {
         <h2 style={sectionTitle}>4. Sorties et participations</h2>
         <h3 style={subTitle}>4.1 Création de sorties</h3>
         <p style={body}>
-          La vérification de l'adresse email est requise pour créer une sortie. Le créateur est responsable de la description exacte de l'activité proposée (lieu, horaire, nature). Nearly n'est pas responsable de l'organisation effective des sorties.
+          La vérification de l'adresse email est requise pour créer une sortie. Le créateur est responsable de la description exacte de l'activité proposée (lieu, horaire, nature). Jowen n'est pas responsable de l'organisation effective des sorties.
         </p>
 
         <h3 style={subTitle}>4.2 Participation</h3>
         <p style={body}>
-          Pour rejoindre une sortie, la vérification d'identité est requise. En rejoignant une sortie, vous vous engagez à vous comporter de manière respectueuse envers les autres participants. Nearly ne garantit pas la présence effective des participants inscrits.
+          Pour rejoindre une sortie, la vérification d'identité est requise. En rejoignant une sortie, vous vous engagez à vous comporter de manière respectueuse envers les autres participants. Jowen ne garantit pas la présence effective des participants inscrits.
         </p>
 
         <h3 style={subTitle}>4.3 Responsabilité lors des sorties</h3>
         <div style={highlight}>
           <p style={{ ...body, margin: 0 }}>
-            Nearly est un outil de mise en relation. L'Application <strong style={{ color: 'var(--text)' }}>décline toute responsabilité</strong> quant aux événements survenant lors des rencontres physiques entre utilisateurs. Chaque participant est responsable de sa propre sécurité et de son comportement.
+            Jowen est un outil de mise en relation. L'Application <strong style={{ color: 'var(--text)' }}>décline toute responsabilité</strong> quant aux événements survenant lors des rencontres physiques entre utilisateurs. Chaque participant est responsable de sa propre sécurité et de son comportement.
           </p>
         </div>
 
@@ -184,15 +184,15 @@ export default function TermsPage() {
         {/* Article 6 */}
         <h2 style={sectionTitle}>6. Propriété intellectuelle</h2>
         <p style={body}>
-          L'Application Nearly, son code source, son design, ses textes, logos et marques sont la propriété exclusive de Nearly SAS. Toute reproduction, modification ou utilisation sans autorisation est interdite.
+          L'Application Jowen, son code source, son design, ses textes, logos et marques sont la propriété exclusive de Jowen SAS. Toute reproduction, modification ou utilisation sans autorisation est interdite.
         </p>
         <p style={body}>
-          Les contenus publiés par les utilisateurs (photos, messages, descriptions) restent leur propriété. En les publiant sur Nearly, vous accordez à Nearly SAS une licence non exclusive, gratuite et mondiale pour les afficher dans le cadre du service. Cette licence prend fin à la suppression du contenu ou du compte.
+          Les contenus publiés par les utilisateurs (photos, messages, descriptions) restent leur propriété. En les publiant sur Jowen, vous accordez à Jowen SAS une licence non exclusive, gratuite et mondiale pour les afficher dans le cadre du service. Cette licence prend fin à la suppression du contenu ou du compte.
         </p>
 
         {/* Article 7 */}
         <h2 style={sectionTitle}>7. Limitation de responsabilité</h2>
-        <p style={body}>Nearly SAS s'engage à fournir un service de qualité mais ne garantit pas :</p>
+        <p style={body}>Jowen SAS s'engage à fournir un service de qualité mais ne garantit pas :</p>
         <ul style={{ paddingLeft: 20, margin: '0 0 12px' }}>
           <li style={li}>La disponibilité ininterrompue de l'Application</li>
           <li style={li}>L'absence totale de bugs ou d'erreurs techniques</li>
@@ -200,25 +200,25 @@ export default function TermsPage() {
           <li style={li}>La sécurité des rencontres physiques entre utilisateurs</li>
         </ul>
         <p style={body}>
-          La responsabilité de Nearly SAS ne saurait être engagée en cas de force majeure, de dysfonctionnement imputable à un tiers (hébergeur, réseau) ou d'utilisation non conforme de l'Application par un utilisateur.
+          La responsabilité de Jowen SAS ne saurait être engagée en cas de force majeure, de dysfonctionnement imputable à un tiers (hébergeur, réseau) ou d'utilisation non conforme de l'Application par un utilisateur.
         </p>
 
         {/* Article 8 */}
         <h2 style={sectionTitle}>8. Sanctions et suspension</h2>
-        <p style={body}>Nearly SAS se réserve le droit, à sa seule discrétion, de :</p>
+        <p style={body}>Jowen SAS se réserve le droit, à sa seule discrétion, de :</p>
         <ul style={{ paddingLeft: 20, margin: '0 0 12px' }}>
           <li style={li}>Suspendre temporairement ou supprimer définitivement un compte en cas de violation des présentes CGU</li>
           <li style={li}>Supprimer tout contenu contraire aux règles de conduite</li>
           <li style={li}>Restreindre l'accès à certaines fonctionnalités en cas de comportement suspect</li>
         </ul>
         <p style={body}>
-          L'utilisateur sanctionné sera informé par email des motifs de la décision et disposera de la possibilité de contester celle-ci en contactant <a href="mailto:contact@nearly.app" style={{ color: 'var(--accent)', textDecoration: 'none' }}>contact@nearly.app</a>.
+          L'utilisateur sanctionné sera informé par email des motifs de la décision et disposera de la possibilité de contester celle-ci en contactant <a href="mailto:contact@jowen.fr" style={{ color: 'var(--accent)', textDecoration: 'none' }}>contact@jowen.fr</a>.
         </p>
 
         {/* Article 9 */}
         <h2 style={sectionTitle}>9. Modification des CGU</h2>
         <p style={body}>
-          Nearly SAS se réserve le droit de modifier les présentes CGU à tout moment. Les utilisateurs seront informés par email et notification in-app au moins <strong style={{ color: 'var(--text)' }}>15 jours avant</strong> l'entrée en vigueur des modifications. L'utilisation continue de l'Application après cette période vaut acceptation des nouvelles conditions.
+          Jowen SAS se réserve le droit de modifier les présentes CGU à tout moment. Les utilisateurs seront informés par email et notification in-app au moins <strong style={{ color: 'var(--text)' }}>15 jours avant</strong> l'entrée en vigueur des modifications. L'utilisation continue de l'Application après cette période vaut acceptation des nouvelles conditions.
         </p>
 
         {/* Article 10 */}
@@ -233,15 +233,15 @@ export default function TermsPage() {
         {/* Article 11 */}
         <h2 style={sectionTitle}>11. Contact</h2>
         <div style={highlight}>
-          <p style={{ ...body, margin: 0 }}><strong style={{ color: 'var(--text)' }}>Nearly SAS</strong></p>
+          <p style={{ ...body, margin: 0 }}><strong style={{ color: 'var(--text)' }}>Jowen SAS</strong></p>
           <p style={{ ...body, margin: '4px 0 0' }}>Troyes, France</p>
-          <p style={{ ...body, margin: '4px 0 0' }}>Email : <a href="mailto:contact@nearly.app" style={{ color: 'var(--accent)', textDecoration: 'none' }}>contact@nearly.app</a></p>
-          <p style={{ ...body, margin: '4px 0 0' }}>DPO : <a href="mailto:dpo@nearly.app" style={{ color: 'var(--accent)', textDecoration: 'none' }}>dpo@nearly.app</a></p>
+          <p style={{ ...body, margin: '4px 0 0' }}>Email : <a href="mailto:contact@jowen.fr" style={{ color: 'var(--accent)', textDecoration: 'none' }}>contact@jowen.fr</a></p>
+          <p style={{ ...body, margin: '4px 0 0' }}>DPO : <a href="mailto:dpo@jowen.fr" style={{ color: 'var(--accent)', textDecoration: 'none' }}>dpo@jowen.fr</a></p>
         </div>
 
         <div style={{ height: 1, background: 'var(--border-color)', margin: '24px 0 16px' }} />
         <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: 'var(--text-tertiary)', textAlign: 'center', lineHeight: 1.6 }}>
-          Nearly SAS · Troyes, France · Version 1.0 du 14 mars 2026{'\n'}
+          Jowen SAS · Troyes, France · Version 1.0 du 14 mars 2026{'\n'}
           Ces CGU sont rédigées en français, langue faisant foi.
         </p>
       </div>

@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+/* iOS : empêche le zoom automatique au focus des champs de saisie.
+   Safari zoome dès qu'un input a une font-size < 16px (et ignore maximum-scale).
+   !important pour couvrir les font-size définies en inline sur certains champs. */
+input,
+textarea,
+select {
+  font-size: 16px !important;
+}
+
 /* ── Thème sombre (défaut) ── */
 :root {
   --bg: #0B0D11;

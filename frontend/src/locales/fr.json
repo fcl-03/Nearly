@@ -1,8 +1,8 @@
 {
   "app": {
-    "name": "Nearly",
+    "name": "Jowen",
     "tagline": "De vraies sorties avec de vraies personnes.",
-    "version": "Nearly · v1.0.0"
+    "version": "Jowen · v1.0.0"
   },
   "auth": {
     "login": "Connexion",
@@ -335,7 +335,7 @@
     "anonymizedDesc": "Tes données personnelles ne sont jamais vendues. Seules des tendances anonymisées (ex : activités populaires dans ta ville) peuvent être partagées avec des partenaires.",
     "gdprRight": "Droit d'opposition (RGPD)",
     "gdprDesc": "Pour t'opposer à l'utilisation de tes données d'activité anonymisées, envoie une demande par email. Ta demande sera traitée sous 30 jours.",
-    "gdprBtn": "✉️ Envoyer une demande à privacy@nearly.app",
+    "gdprBtn": "✉️ Envoyer une demande à privacy@jowen.fr",
     "readCharter": "Lire la charte complète",
     "help": "Aide",
     "viewCharter": "Voir la charte et CGU",
@@ -351,9 +351,9 @@
     "deleteError": "Une erreur est survenue. Réessaie."
   },
   "premium": {
-    "title": "Nearly Premium",
+    "title": "Jowen Premium",
     "heroTitle": "Passe à la vitesse <accent>supérieure</accent>",
-    "heroDesc": "Profite de Nearly sans limites et soutiens le projet.",
+    "heroDesc": "Profite de Jowen sans limites et soutiens le projet.",
     "monthlyLabel": "Abonnement mensuel",
     "noCommitment": "Sans engagement · résiliable à tout moment",
     "feature1": "Sorties mises en avant — tes sorties apparaissent en tête de liste avec un style doré",
@@ -365,7 +365,7 @@
     "subscribeCta": "Passer Premium — 4,99 €/mois",
     "loading": "Chargement…",
     "stripeNote": "Paiement sécurisé par Stripe. Tu peux annuler à tout moment depuis les paramètres.",
-    "successTitle": "Bienvenue dans Nearly Premium !",
+    "successTitle": "Bienvenue dans Jowen Premium !",
     "successDesc": "Ton abonnement est actif. Profite de toutes les fonctionnalités sans limites.",
     "redirecting": "Redirection dans quelques secondes…"
   },

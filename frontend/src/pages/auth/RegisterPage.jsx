@@ -6,7 +6,7 @@ import { INTERESTS } from '../../utils/categories'
 import api from '../../services/api'
 import CharterContent from '../legal/CharterContent'
 
-// Page d'inscription en 3 étapes — inspirée du design system Nearly
+// Page d'inscription en 3 étapes — inspirée du design system Jowen
 export default function RegisterPage() {
   const navigate = useNavigate()
   const { setTokens, setUser } = useAuthStore()
@@ -152,7 +152,7 @@ export default function RegisterPage() {
               lineHeight: 1,
             }}
           >
-            Nearly.
+            Jowen.
           </span>
           <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 6 }}>
             De vraies sorties avec de vraies personnes.

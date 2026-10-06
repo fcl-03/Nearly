@@ -1,4 +1,4 @@
-// Source de vérité unique pour les plans Business Nearly.
+// Source de vérité unique pour les plans Business Jowen.
 // Toute modification de prix / avantage / limite passe par ici.
 
 export const BUSINESS_PLANS = {

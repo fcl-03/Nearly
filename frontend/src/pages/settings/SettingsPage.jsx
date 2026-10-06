@@ -425,7 +425,7 @@ export default function SettingsPage() {
           </button>
           <div style={rowDivider} />
           <a
-            href="mailto:contact@nearly.app"
+            href="mailto:contact@jowen.fr"
             style={{ ...rowBase, textDecoration: 'none' }}
             onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
             onMouseLeave={e => e.currentTarget.style.background = 'none'}
@@ -447,7 +447,7 @@ export default function SettingsPage() {
                 color: 'var(--text-tertiary)',
               }}
             >
-              contact@nearly.app
+              contact@jowen.fr
             </span>
           </a>
           <div style={rowDivider} />
@@ -522,7 +522,7 @@ export default function SettingsPage() {
             marginTop: 8,
           }}
         >
-          Nearly · v1.0.0
+          Jowen · v1.0.0
         </p>
       </div>
 

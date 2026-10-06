@@ -67,7 +67,7 @@ export default function ResetPasswordPage() {
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 36 }}>
           <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 48, color: 'var(--accent)', display: 'block', lineHeight: 1 }}>
-            Nearly.
+            Jowen.
           </span>
         </div>
 

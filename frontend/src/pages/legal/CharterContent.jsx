@@ -59,26 +59,26 @@ export default function CharterContent() {
       <div style={divider} />
 
       <p style={body}>
-        La présente politique de confidentialité et conditions générales d'utilisation (ci-après « la Charte ») régit l'utilisation de l'application Nearly (ci-après « l'Application »), éditée par Nearly SAS, et s'applique à tout utilisateur résidant dans l'Espace économique européen ou accédant à l'Application depuis celui-ci.
+        La présente politique de confidentialité et conditions générales d'utilisation (ci-après « la Charte ») régit l'utilisation de l'application Jowen (ci-après « l'Application »), éditée par Jowen SAS, et s'applique à tout utilisateur résidant dans l'Espace économique européen ou accédant à l'Application depuis celui-ci.
       </p>
       <p style={body}>
-        Nearly est une application sociale destinée à faciliter des sorties informelles en petits groupes pour des personnes de 25 à 35 ans dans les villes françaises. Nous accordons une importance capitale à la protection de vos données personnelles et nous engageons à traiter celles-ci dans le strict respect du Règlement Général sur la Protection des Données (RGPD — Règlement (UE) 2016/679), de la loi Informatique et Libertés modifiée et de l'ensemble des textes applicables.
+        Jowen est une application sociale destinée à faciliter des sorties informelles en petits groupes pour des personnes de 25 à 35 ans dans les villes françaises. Nous accordons une importance capitale à la protection de vos données personnelles et nous engageons à traiter celles-ci dans le strict respect du Règlement Général sur la Protection des Données (RGPD — Règlement (UE) 2016/679), de la loi Informatique et Libertés modifiée et de l'ensemble des textes applicables.
       </p>
       <p style={body}>
-        En vous inscrivant sur Nearly, vous reconnaissez avoir lu, compris et accepté la présente Charte dans son intégralité. Si vous n'acceptez pas ces conditions, vous ne devez pas utiliser l'Application.
+        En vous inscrivant sur Jowen, vous reconnaissez avoir lu, compris et accepté la présente Charte dans son intégralité. Si vous n'acceptez pas ces conditions, vous ne devez pas utiliser l'Application.
       </p>
 
       <h2 style={sectionTitle}>1. Responsable du traitement</h2>
       <p style={body}>Le responsable du traitement de vos données personnelles est :</p>
       <div style={highlight}>
-        <p style={{ ...body, margin: 0, fontWeight: 600, color: 'var(--text)' }}>Nearly SAS</p>
+        <p style={{ ...body, margin: 0, fontWeight: 600, color: 'var(--text)' }}>Jowen SAS</p>
         <p style={{ ...body, margin: '4px 0 0' }}>Troyes, France</p>
-        <p style={{ ...body, margin: '4px 0 0' }}>Délégué à la Protection des Données (DPO) :{' '}<a href="mailto:dpo@nearly.app" style={{ color: 'var(--accent)', textDecoration: 'none' }}>dpo@nearly.app</a></p>
-        <p style={{ ...body, margin: '4px 0 0' }}>Contact général :{' '}<a href="mailto:contact@nearly.app" style={{ color: 'var(--accent)', textDecoration: 'none' }}>contact@nearly.app</a></p>
+        <p style={{ ...body, margin: '4px 0 0' }}>Délégué à la Protection des Données (DPO) :{' '}<a href="mailto:dpo@jowen.fr" style={{ color: 'var(--accent)', textDecoration: 'none' }}>dpo@jowen.fr</a></p>
+        <p style={{ ...body, margin: '4px 0 0' }}>Contact général :{' '}<a href="mailto:contact@jowen.fr" style={{ color: 'var(--accent)', textDecoration: 'none' }}>contact@jowen.fr</a></p>
       </div>
 
       <h2 style={sectionTitle}>2. Données collectées</h2>
-      <p style={body}>Dans le cadre du fonctionnement de Nearly, nous collectons les catégories de données suivantes :</p>
+      <p style={body}>Dans le cadre du fonctionnement de Jowen, nous collectons les catégories de données suivantes :</p>
 
       <h3 style={subTitle}>2.1 Données d'identité et de contact</h3>
       <ul style={{ paddingLeft: 20, margin: '0 0 12px' }}>
@@ -125,7 +125,7 @@ export default function CharterContent() {
 
       <h3 style={subTitle}>2.6 Données non collectées</h3>
       <p style={body}>
-        Nearly ne collecte <strong style={{ color: 'var(--text)' }}>jamais</strong> : numéro de téléphone, données bancaires directes (gestion déléguée à Stripe), numéro de sécurité sociale, données de santé, ni aucune donnée sensible au sens de l'article 9 du RGPD (origines raciales ou ethniques, opinions politiques, convictions religieuses, orientation sexuelle).
+        Jowen ne collecte <strong style={{ color: 'var(--text)' }}>jamais</strong> : numéro de téléphone, données bancaires directes (gestion déléguée à Stripe), numéro de sécurité sociale, données de santé, ni aucune donnée sensible au sens de l'article 9 du RGPD (origines raciales ou ethniques, opinions politiques, convictions religieuses, orientation sexuelle).
       </p>
 
       <h2 style={sectionTitle}>3. Finalités du traitement</h2>
@@ -182,7 +182,7 @@ export default function CharterContent() {
 
       <h2 style={sectionTitle}>5. Partage de données personnelles</h2>
       <h3 style={subTitle}>5.1 Sous-traitants techniques</h3>
-      <p style={body}>Nearly fait appel à des sous-traitants techniques pour opérer le service. Ces prestataires n'agissent que sur instruction de Nearly et sont soumis à des clauses contractuelles strictes :</p>
+      <p style={body}>Jowen fait appel à des sous-traitants techniques pour opérer le service. Ces prestataires n'agissent que sur instruction de Jowen et sont soumis à des clauses contractuelles strictes :</p>
       <ul style={{ paddingLeft: 20, margin: '0 0 12px' }}>
         <li style={li}><strong style={{ color: 'var(--text)' }}>Hetzner Online GmbH</strong> (Allemagne) — hébergement des serveurs et stockage objet S3 (Allemagne, Union Européenne)</li>
         <li style={li}><strong style={{ color: 'var(--text)' }}>Cloudflare Inc.</strong> (États-Unis) — réseau de distribution de contenu (CDN) et protection DDoS, couvert par les Clauses Contractuelles Types (CCT)</li>
@@ -191,19 +191,19 @@ export default function CharterContent() {
         <li style={li}><strong style={{ color: 'var(--text)' }}>Sentry.io</strong> (États-Unis) — monitoring des erreurs techniques (données anonymisées/pseudonymisées)</li>
       </ul>
       <h3 style={subTitle}>5.2 Autorités compétentes</h3>
-      <p style={body}>Nearly peut être amené à communiquer vos données à des autorités judiciaires, administratives ou de sécurité publique françaises ou européennes en vertu d'une obligation légale ou d'une décision judiciaire. Une telle communication ne sera jamais effectuée au-delà du strict nécessaire.</p>
+      <p style={body}>Jowen peut être amené à communiquer vos données à des autorités judiciaires, administratives ou de sécurité publique françaises ou européennes en vertu d'une obligation légale ou d'une décision judiciaire. Une telle communication ne sera jamais effectuée au-delà du strict nécessaire.</p>
       <h3 style={subTitle}>5.3 Vente de données personnelles — INTERDITE</h3>
       <div style={highlight}>
-        <p style={{ ...body, margin: 0, fontWeight: 700, color: 'var(--text)' }}>Nearly ne vend jamais, en aucun cas, vos données personnelles à des tiers. Aucun tiers commercial ne reçoit de données vous identifiant directement ou indirectement.</p>
+        <p style={{ ...body, margin: 0, fontWeight: 700, color: 'var(--text)' }}>Jowen ne vend jamais, en aucun cas, vos données personnelles à des tiers. Aucun tiers commercial ne reçoit de données vous identifiant directement ou indirectement.</p>
       </div>
 
       <h2 style={sectionTitle}>6. Données agrégées et anonymisées — Modèle de monétisation</h2>
       <div style={{ ...highlight }}>
         <p style={{ ...body, fontWeight: 700, color: 'var(--accent)', margin: '0 0 8px', fontSize: 15 }}>Section importante — lisez attentivement</p>
-        <p style={{ ...body, margin: 0 }}>Cette section décrit la manière dont Nearly génère des revenus sans compromettre votre vie privée.</p>
+        <p style={{ ...body, margin: 0 }}>Cette section décrit la manière dont Jowen génère des revenus sans compromettre votre vie privée.</p>
       </div>
       <h3 style={subTitle}>6.1 Principe de l'anonymisation</h3>
-      <p style={body}>Avec votre consentement, Nearly peut analyser vos données d'activité dans le but de produire des <strong style={{ color: 'var(--text)' }}>statistiques agrégées et anonymisées</strong>. Ces statistiques satisfont aux critères du RGPD relatifs à l'anonymisation : elles ne permettent pas, même par recoupement, de ré-identifier un individu.</p>
+      <p style={body}>Avec votre consentement, Jowen peut analyser vos données d'activité dans le but de produire des <strong style={{ color: 'var(--text)' }}>statistiques agrégées et anonymisées</strong>. Ces statistiques satisfont aux critères du RGPD relatifs à l'anonymisation : elles ne permettent pas, même par recoupement, de ré-identifier un individu.</p>
       <ul style={{ paddingLeft: 20, margin: '0 0 12px' }}>
         <li style={li}>Agrégation des données sur un minimum de 50 utilisateurs par segment (k-anonymat ≥ 50)</li>
         <li style={li}>Suppression de tout identifiant direct et indirect avant agrégation</li>
@@ -234,7 +234,7 @@ export default function CharterContent() {
       <h2 style={sectionTitle}>7. Transferts internationaux de données</h2>
       <p style={body}>Certains sous-traitants (Cloudflare, Resend, Stripe, Sentry) sont établis aux États-Unis. Ces transferts hors EEE sont encadrés par les <strong style={{ color: 'var(--text)' }}>Clauses Contractuelles Types (CCT)</strong> adoptées par la Commission européenne, conformément à l'article 46 du RGPD.</p>
       <p style={body}>L'hébergement principal des données est réalisé en <strong style={{ color: 'var(--text)' }}>Allemagne (Hetzner, Nuremberg/Falkenstein)</strong>, au sein de l'Union Européenne.</p>
-      <p style={body}>Nearly s'engage à vous informer de tout changement de sous-traitant impliquant un transfert hors EEE dans un délai de 30 jours avant sa mise en œuvre.</p>
+      <p style={body}>Jowen s'engage à vous informer de tout changement de sous-traitant impliquant un transfert hors EEE dans un délai de 30 jours avant sa mise en œuvre.</p>
 
       <h2 style={sectionTitle}>8. Durée de conservation des données</h2>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
@@ -274,10 +274,10 @@ export default function CharterContent() {
           </div>
         ))}
       </div>
-      <p style={body}>Pour exercer vos droits, contactez notre DPO à l'adresse{' '}<a href="mailto:dpo@nearly.app" style={{ color: 'var(--accent)', textDecoration: 'none' }}>dpo@nearly.app</a>{' '}en précisant votre identité et la nature de votre demande. Nous accuserons réception sous 72 heures et traiterons votre demande dans un délai d'un mois.</p>
+      <p style={body}>Pour exercer vos droits, contactez notre DPO à l'adresse{' '}<a href="mailto:dpo@jowen.fr" style={{ color: 'var(--accent)', textDecoration: 'none' }}>dpo@jowen.fr</a>{' '}en précisant votre identité et la nature de votre demande. Nous accuserons réception sous 72 heures et traiterons votre demande dans un délai d'un mois.</p>
 
       <h2 style={sectionTitle}>10. Sécurité des données</h2>
-      <p style={body}>Nearly met en œuvre les mesures techniques et organisationnelles appropriées pour protéger vos données :</p>
+      <p style={body}>Jowen met en œuvre les mesures techniques et organisationnelles appropriées pour protéger vos données :</p>
       <ul style={{ paddingLeft: 20, margin: '0 0 12px' }}>
         <li style={li}>Chiffrement des mots de passe avec bcrypt (facteur de coût élevé)</li>
         <li style={li}>Authentification par JWT avec expiration courte (access token : 15 min)</li>
@@ -290,10 +290,10 @@ export default function CharterContent() {
         <li style={li}>Mises à jour de sécurité appliquées dans un délai maximum de 72 heures après publication</li>
         <li style={li}>Hébergement en Allemagne (Hetzner), soumis au droit européen de la protection des données</li>
       </ul>
-      <p style={body}>En cas de violation de données susceptible d'engendrer un risque pour vos droits et libertés, Nearly notifiera la CNIL dans un délai de 72 heures et vous informera personnellement si le risque est élevé.</p>
+      <p style={body}>En cas de violation de données susceptible d'engendrer un risque pour vos droits et libertés, Jowen notifiera la CNIL dans un délai de 72 heures et vous informera personnellement si le risque est élevé.</p>
 
       <h2 style={sectionTitle}>11. Cookies et stockage local</h2>
-      <p style={body}>Nearly est une Progressive Web App (PWA). Nous n'utilisons pas de cookies tiers à des fins publicitaires.</p>
+      <p style={body}>Jowen est une Progressive Web App (PWA). Nous n'utilisons pas de cookies tiers à des fins publicitaires.</p>
       <h3 style={subTitle}>11.1 LocalStorage (navigateur)</h3>
       <ul style={{ paddingLeft: 20, margin: '0 0 12px' }}>
         <li style={li}><strong style={{ color: 'var(--text)' }}>nearly-auth</strong> : tokens JWT (access + refresh) — indispensable au fonctionnement, base légale : exécution du contrat</li>
@@ -309,17 +309,17 @@ export default function CharterContent() {
       <p style={body}>Un service worker peut être installé pour les fonctionnalités hors-ligne de base. Il ne collecte aucune donnée personnelle et peut être supprimé en désinstallant l'application.</p>
 
       <h2 style={sectionTitle}>12. Protection des mineurs</h2>
-      <p style={body}>L'Application Nearly est destinée aux personnes majeures (18 ans et plus). Nous ne collectons sciemment aucune donnée concernant des mineurs de moins de 18 ans. Si vous avez connaissance qu'un mineur a créé un compte, contactez-nous immédiatement à{' '}<a href="mailto:contact@nearly.app" style={{ color: 'var(--accent)', textDecoration: 'none' }}>contact@nearly.app</a>{' '}afin que nous procédions à la suppression du compte.</p>
+      <p style={body}>L'Application Jowen est destinée aux personnes majeures (18 ans et plus). Nous ne collectons sciemment aucune donnée concernant des mineurs de moins de 18 ans. Si vous avez connaissance qu'un mineur a créé un compte, contactez-nous immédiatement à{' '}<a href="mailto:contact@jowen.fr" style={{ color: 'var(--accent)', textDecoration: 'none' }}>contact@jowen.fr</a>{' '}afin que nous procédions à la suppression du compte.</p>
 
       <h2 style={sectionTitle}>13. Modifications de la présente Charte</h2>
-      <p style={body}>Nearly se réserve le droit de modifier la présente Charte à tout moment. En cas de modification substantielle, nous vous informerons par e-mail et via une notification in-app au moins <strong style={{ color: 'var(--text)' }}>15 jours avant</strong> l'entrée en vigueur des modifications. Votre usage continu de l'Application après cette période vaudra acceptation des nouvelles conditions.</p>
+      <p style={body}>Jowen se réserve le droit de modifier la présente Charte à tout moment. En cas de modification substantielle, nous vous informerons par e-mail et via une notification in-app au moins <strong style={{ color: 'var(--text)' }}>15 jours avant</strong> l'entrée en vigueur des modifications. Votre usage continu de l'Application après cette période vaudra acceptation des nouvelles conditions.</p>
 
       <h2 style={sectionTitle}>14. Contact et recours CNIL</h2>
       <h3 style={subTitle}>14.1 Délégué à la Protection des Données (DPO)</h3>
       <div style={highlight}>
-        <p style={{ ...body, margin: 0 }}><strong style={{ color: 'var(--text)' }}>E-mail :</strong>{' '}<a href="mailto:dpo@nearly.app" style={{ color: 'var(--accent)', textDecoration: 'none' }}>dpo@nearly.app</a></p>
+        <p style={{ ...body, margin: 0 }}><strong style={{ color: 'var(--text)' }}>E-mail :</strong>{' '}<a href="mailto:dpo@jowen.fr" style={{ color: 'var(--accent)', textDecoration: 'none' }}>dpo@jowen.fr</a></p>
         <p style={{ ...body, margin: '6px 0 0' }}><strong style={{ color: 'var(--text)' }}>Délai de réponse :</strong> 72h pour accusé de réception, 30 jours pour réponse complète</p>
-        <p style={{ ...body, margin: '6px 0 0' }}><strong style={{ color: 'var(--text)' }}>Contact général :</strong>{' '}<a href="mailto:contact@nearly.app" style={{ color: 'var(--accent)', textDecoration: 'none' }}>contact@nearly.app</a></p>
+        <p style={{ ...body, margin: '6px 0 0' }}><strong style={{ color: 'var(--text)' }}>Contact général :</strong>{' '}<a href="mailto:contact@jowen.fr" style={{ color: 'var(--accent)', textDecoration: 'none' }}>contact@jowen.fr</a></p>
       </div>
       <h3 style={subTitle}>14.2 Recours auprès de la CNIL</h3>
       <p style={body}>Si vous estimez que vos droits ne sont pas respectés après nous avoir contactés, vous disposez du droit d'introduire une réclamation auprès de l'autorité de contrôle compétente :</p>
@@ -332,7 +332,7 @@ export default function CharterContent() {
 
       <div style={{ height: 1, background: 'var(--border-color)', margin: '24px 0 16px' }} />
       <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: 'var(--text-tertiary)', textAlign: 'center', lineHeight: 1.6 }}>
-        Nearly SAS · Troyes, France · Version 1.0 du 12 mars 2026{'\n'}Cette charte est rédigée en français, langue faisant foi.
+        Jowen SAS · Troyes, France · Version 1.0 du 12 mars 2026{'\n'}Cette charte est rédigée en français, langue faisant foi.
       </p>
     </>
   )

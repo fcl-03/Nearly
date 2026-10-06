@@ -5,7 +5,7 @@ import { useAuthStore } from '../../stores/authStore'
 import { useThemeStore } from '../../stores/themeStore'
 import api from '../../services/api'
 
-// Page de connexion — inspirée du design system Nearly
+// Page de connexion — inspirée du design system Jowen
 export default function LoginPage() {
   const navigate = useNavigate()
   const { setTokens } = useAuthStore()
@@ -103,7 +103,7 @@ export default function LoginPage() {
               lineHeight: 1,
             }}
           >
-            Nearly.
+            Jowen.
           </span>
           <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginTop: 8 }}>
             De vraies sorties avec de vraies personnes.

@@ -1,8 +1,8 @@
 {
   "app": {
-    "name": "Nearly",
+    "name": "Jowen",
     "tagline": "Real outings with real people.",
-    "version": "Nearly · v1.0.0"
+    "version": "Jowen · v1.0.0"
   },
   "auth": {
     "login": "Log in",
@@ -335,7 +335,7 @@
     "anonymizedDesc": "Your personal data is never sold. Only anonymized trends (e.g., popular activities in your city) may be shared with partners.",
     "gdprRight": "Right to object (GDPR)",
     "gdprDesc": "To object to the use of your anonymized activity data, send a request by email. Your request will be processed within 30 days.",
-    "gdprBtn": "✉️ Send a request to privacy@nearly.app",
+    "gdprBtn": "✉️ Send a request to privacy@jowen.fr",
     "readCharter": "Read the full charter",
     "help": "Help",
     "viewCharter": "View charter and ToS",
@@ -351,9 +351,9 @@
     "deleteError": "Something went wrong. Try again."
   },
   "premium": {
-    "title": "Nearly Premium",
+    "title": "Jowen Premium",
     "heroTitle": "Take it to the <accent>next level</accent>",
-    "heroDesc": "Enjoy Nearly without limits and support the project.",
+    "heroDesc": "Enjoy Jowen without limits and support the project.",
     "monthlyLabel": "Monthly subscription",
     "noCommitment": "No commitment · cancel anytime",
     "feature1": "Featured outings — your outings appear at the top with a gold style",
@@ -365,7 +365,7 @@
     "subscribeCta": "Go Premium — €4.99/month",
     "loading": "Loading…",
     "stripeNote": "Secure payment by Stripe. You can cancel anytime from settings.",
-    "successTitle": "Welcome to Nearly Premium!",
+    "successTitle": "Welcome to Jowen Premium!",
     "successDesc": "Your subscription is active. Enjoy all features without limits.",
     "redirecting": "Redirecting in a few seconds…"
   },

@@ -274,7 +274,7 @@ export default function EventsPage() {
               lineHeight: 1,
             }}
           >
-            Nearly.
+            Jowen.
           </h1>
 
           {/* Cloche notifications */}

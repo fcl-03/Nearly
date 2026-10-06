@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom'
 import api from '../../services/api'
 import Spinner from '../../components/ui/Spinner'
 
-// Page de vérification d'email — centrée, design system Nearly
+// Page de vérification d'email — centrée, design system Jowen
 export default function VerifyEmailPage() {
   const [params] = useSearchParams()
   const navigate = useNavigate()
@@ -48,7 +48,7 @@ export default function VerifyEmailPage() {
               color: 'var(--accent)',
             }}
           >
-            Nearly.
+            Jowen.
           </span>
         </div>
 

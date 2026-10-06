@@ -51,7 +51,7 @@ export default function PremiumPage() {
           <ArrowLeft size={22} />
         </button>
         <h1 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 17, color: 'var(--text)', margin: 0, flex: 1 }}>
-          Nearly Premium
+          Jowen Premium
         </h1>
       </div>
 
@@ -65,7 +65,7 @@ export default function PremiumPage() {
             <span style={{ color: 'var(--accent)' }}>supérieure</span>
           </h2>
           <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 15, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
-            Profite de Nearly sans limites et soutiens le projet.
+            Profite de Jowen sans limites et soutiens le projet.
           </p>
         </div>
 

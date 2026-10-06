@@ -317,7 +317,7 @@ function CreateBusinessPrompt({ navigate }) {
             Compte Entreprise
           </h1>
           <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
-            Mets en avant ton établissement et attire des clients via Nearly.
+            Mets en avant ton établissement et attire des clients via Jowen.
           </p>
         </div>
 

@@ -66,7 +66,7 @@ async def get_current_user(
             detail={
                 "code": "account_suspended",
                 "message": "Ton compte a été suspendu.",
-                "contact_email": "support@nearly.app",
+                "contact_email": "support@jowen.fr",
             },
         )
 

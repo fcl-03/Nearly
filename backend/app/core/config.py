@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
     # Application
-    APP_NAME: str = "Nearly"
+    APP_NAME: str = "Jowen"
     DEBUG: bool = False
     SECRET_KEY: str = "change-this-in-production"
 
@@ -28,7 +28,7 @@ class Settings(BaseSettings):
 
     # Email (Resend)
     RESEND_API_KEY: str = ""
-    EMAIL_FROM: str = "noreply@nearly.app"
+    EMAIL_FROM: str = "noreply@jowen.fr"
 
     # Paiements (Stripe)
     STRIPE_SECRET_KEY: str = ""

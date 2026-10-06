@@ -35,12 +35,12 @@ _BTN_STYLE = """
 
 
 def _wrap(content: str) -> str:
-    """Enveloppe le contenu dans le layout email Nearly."""
+    """Enveloppe le contenu dans le layout email Jowen."""
     return f"""
     <!DOCTYPE html><html><body style="background:#F4F5F9; padding: 32px 16px;">
     <div style="{_BASE_STYLE}">
       <div style="{_HEADER_STYLE}">
-        <p style="{_LOGO_STYLE}">Nearly.</p>
+        <p style="{_LOGO_STYLE}">Jowen.</p>
       </div>
       <div style="{_BODY_STYLE}">{content}</div>
     </div>
@@ -81,7 +81,7 @@ async def send_verification_email(email: str, first_name: str, token: str) -> No
             Bienvenue, {first_name} ! 👋
         </p>
         <p style="{_TEXT_STYLE}">
-            Clique sur le bouton ci-dessous pour vérifier ton adresse email et accéder à Nearly.
+            Clique sur le bouton ci-dessous pour vérifier ton adresse email et accéder à Jowen.
         </p>
         <a href="{verify_url}" style="{_BTN_STYLE}">Vérifier mon email</a>
         <p style="{_MUTED_STYLE}">
@@ -89,7 +89,7 @@ async def send_verification_email(email: str, first_name: str, token: str) -> No
             Si tu n'as pas créé de compte, ignore cet email.
         </p>
     """)
-    await _send(email, "Vérifie ton email — Nearly", html)
+    await _send(email, "Vérifie ton email — Jowen", html)
 
 
 async def send_password_reset_email(email: str, first_name: str, token: str) -> None:
@@ -111,7 +111,7 @@ async def send_password_reset_email(email: str, first_name: str, token: str) -> 
             Si tu n'as pas fait cette demande, ignore cet email — ton mot de passe reste inchangé.
         </p>
     """)
-    await _send(email, "Réinitialise ton mot de passe — Nearly", html)
+    await _send(email, "Réinitialise ton mot de passe — Jowen", html)
 
 
 async def send_friend_request_email(to_email: str, to_name: str, from_name: str) -> None:
@@ -123,12 +123,12 @@ async def send_friend_request_email(to_email: str, to_name: str, from_name: str)
         </p>
         <p style="{_TEXT_STYLE}">
             Salut {to_name},<br><br>
-            <strong>{from_name}</strong> t'a envoyé une demande d'ami sur Nearly.
+            <strong>{from_name}</strong> t'a envoyé une demande d'ami sur Jowen.
         </p>
         <a href="{url}" style="{_BTN_STYLE}">Voir la demande</a>
-        <p style="{_MUTED_STYLE}">Tu reçois cet email car quelqu'un t'a ajouté sur Nearly.</p>
+        <p style="{_MUTED_STYLE}">Tu reçois cet email car quelqu'un t'a ajouté sur Jowen.</p>
     """)
-    await _send(to_email, f"{from_name} veut être ton ami sur Nearly", html)
+    await _send(to_email, f"{from_name} veut être ton ami sur Jowen", html)
 
 
 async def send_friend_accepted_email(to_email: str, to_name: str, from_name: str) -> None:
@@ -141,7 +141,7 @@ async def send_friend_accepted_email(to_email: str, to_name: str, from_name: str
         <p style="{_TEXT_STYLE}">
             Salut {to_name},<br><br>
             <strong>{from_name}</strong> a accepté ta demande d'ami.
-            Vous êtes maintenant amis sur Nearly !
+            Vous êtes maintenant amis sur Jowen !
         </p>
         <a href="{url}" style="{_BTN_STYLE}">Voir mes amis</a>
         <p style="{_MUTED_STYLE}">Tu reçois cet email car ta demande d'ami a été acceptée.</p>
@@ -166,7 +166,7 @@ async def send_badge_received_email(
         <a href="{url}" style="{_BTN_STYLE}">Voir mon profil</a>
         <p style="{_MUTED_STYLE}">Tu reçois cet email car un autre membre t'a attribué un badge.</p>
     """)
-    await _send(to_email, f"Tu as reçu le badge {badge_emoji} {badge_name} sur Nearly", html)
+    await _send(to_email, f"Tu as reçu le badge {badge_emoji} {badge_name} sur Jowen", html)
 
 
 async def send_achievement_email(
@@ -184,7 +184,7 @@ async def send_achievement_email(
             <em style="color:#858AA8;">{desc}</em>
         </p>
         <a href="{url}" style="{_BTN_STYLE}">Voir mon profil</a>
-        <p style="{_MUTED_STYLE}">Tu reçois cet email car tu as accompli un objectif sur Nearly.</p>
+        <p style="{_MUTED_STYLE}">Tu reçois cet email car tu as accompli un objectif sur Jowen.</p>
     """)
     await _send(to_email, f"Succès débloqué : {emoji} {name}", html)
 

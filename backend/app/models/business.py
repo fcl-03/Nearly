@@ -9,12 +9,12 @@ from app.models.base import Base
 
 
 class BusinessAccount(Base):
-    """Compte entreprise B2B — établissements locaux partenaires de Nearly."""
+    """Compte entreprise B2B — établissements locaux partenaires de Jowen."""
     __tablename__ = "business_accounts"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
-    # Propriétaire — un utilisateur Nearly existant qui gère ce compte business
+    # Propriétaire — un utilisateur Jowen existant qui gère ce compte business
     owner_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 
     # Infos de l'établissement

@@ -74,7 +74,7 @@ async def login_user(
             detail={
                 "code": "account_suspended",
                 "message": "Ton compte a été suspendu pour non-respect de nos règles d'utilisation.",
-                "contact_email": "support@nearly.app",
+                "contact_email": "support@jowen.fr",
                 "help": "Si tu penses qu'il s'agit d'une erreur, contacte-nous par email pour demander un réexamen.",
             },
         )

@@ -30,7 +30,7 @@ export default function PremiumSuccessPage() {
     <div style={{ minHeight: '100dvh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 32px', gap: 20, textAlign: 'center' }}>
       <div style={{ fontSize: 64 }}>⚡</div>
       <h1 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 900, fontSize: 28, color: 'var(--accent)', margin: 0 }}>
-        Bienvenue dans Nearly Premium !
+        Bienvenue dans Jowen Premium !
       </h1>
       <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 15, color: 'var(--text-secondary)', lineHeight: 1.6, maxWidth: 320 }}>
         Ton abonnement est actif. Profite de toutes les fonctionnalités sans limites.
