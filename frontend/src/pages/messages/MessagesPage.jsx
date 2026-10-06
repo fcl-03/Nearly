@@ -84,25 +84,35 @@ export default function MessagesPage() {
   // Compter les non-lus events
   const totalEventUnread = Object.values(unreadCounts).reduce((s, n) => s + n, 0)
 
-  // Swipe horizontal pour basculer entre les onglets (Sorties ↔ Messages privés)
-  const touchStart = useRef(null)
-  function onTouchStart(e) {
-    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
-  }
-  function onTouchEnd(e) {
-    if (!touchStart.current) return
-    const dx = e.changedTouches[0].clientX - touchStart.current.x
-    const dy = e.changedTouches[0].clientY - touchStart.current.y
-    touchStart.current = null
-    // Swipe horizontal franc uniquement (on ignore un scroll vertical)
-    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
-      if (dx < 0 && tab === 'active') setTab('dm')        // vers la gauche → MP
-      else if (dx > 0 && tab === 'dm') setTab('active')   // vers la droite → Sorties
+  // Carrousel horizontal (swipe natif iOS) entre les panneaux Sorties ↔ MP.
+  const scrollRef = useRef(null)
+  const scrollEndTimer = useRef(null)
+  const TAB_INDEX = { active: 0, dm: 1 }
+
+  // Un clic sur un onglet fait défiler vers le bon panneau
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const target = TAB_INDEX[tab] * el.clientWidth
+    if (Math.abs(el.scrollLeft - target) > 5) {
+      el.scrollTo({ left: target, behavior: 'smooth' })
     }
+  }, [tab])
+
+  // Le swipe met à jour l'onglet — en fin de défilement (debounce) pour éviter
+  // que le défilement programmatique d'un clic ne se batte avec le state.
+  function onCarouselScroll(e) {
+    const el = e.currentTarget
+    clearTimeout(scrollEndTimer.current)
+    scrollEndTimer.current = setTimeout(() => {
+      const idx = Math.round(el.scrollLeft / el.clientWidth)
+      const newTab = idx === 1 ? 'dm' : 'active'
+      if (newTab !== tab) setTab(newTab)
+    }, 90)
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
 
       {/* ── En-tête ── */}
       <div style={{ padding: '30px 20px 16px' }}>
@@ -129,10 +139,16 @@ export default function MessagesPage() {
         </TabBtn>
       </div>
 
-      {/* ── Contenu ── */}
-      <div style={{ flex: 1, overflowY: 'auto' }}>
-        {tab === 'active' && (
-          eventsLoading ? (
+      {/* ── Contenu : carrousel swipeable (Sorties ↔ MP) ── */}
+      <div
+        ref={scrollRef}
+        onScroll={onCarouselScroll}
+        className="nearly-hscroll"
+        style={{ flex: 1, display: 'flex', overflowX: 'auto', overflowY: 'hidden', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' }}
+      >
+        {/* Panneau Sorties */}
+        <div style={{ flex: '0 0 100%', width: '100%', scrollSnapAlign: 'start', overflowY: 'auto', overflowX: 'hidden' }}>
+          {eventsLoading ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '48px 0' }}>
               <Spinner />
             </div>
@@ -153,11 +169,12 @@ export default function MessagesPage() {
                 )
               })}
             </div>
-          )
-        )}
+          )}
+        </div>
 
-        {tab === 'dm' && (
-          dmLoading ? (
+        {/* Panneau Messages privés */}
+        <div style={{ flex: '0 0 100%', width: '100%', scrollSnapAlign: 'start', overflowY: 'auto', overflowX: 'hidden' }}>
+          {dmLoading ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '48px 0' }}>
               <Spinner />
             </div>
@@ -173,8 +190,8 @@ export default function MessagesPage() {
                 />
               ))}
             </div>
-          )
-        )}
+          )}
+        </div>
       </div>
     </div>
   )
