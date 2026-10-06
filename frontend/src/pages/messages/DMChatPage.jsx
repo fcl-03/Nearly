@@ -34,7 +34,9 @@ export default function DMChatPage() {
       .then(({ data }) => setMessages(data))
       .catch(() => {})
       .finally(() => setLoadingHistory(false))
-    api.post(`/dm/${userId}/mark-read`).catch(() => {})
+    api.post(`/dm/${userId}/mark-read`)
+      .then(() => window.dispatchEvent(new Event('unread-messages-updated')))
+      .catch(() => {})
   }, [userId])
 
   // Polling toutes les 3s pour les nouveaux messages
@@ -48,7 +50,9 @@ export default function DMChatPage() {
             return prev
           })
           // Marquer comme lu automatiquement
-          api.post(`/dm/${userId}/mark-read`).catch(() => {})
+          api.post(`/dm/${userId}/mark-read`)
+            .then(() => window.dispatchEvent(new Event('unread-messages-updated')))
+            .catch(() => {})
         })
         .catch(() => {})
     }, 3000)
@@ -64,7 +68,10 @@ export default function DMChatPage() {
 
   // Marquer comme lu au retour
   async function handleBack() {
-    try { await api.post(`/dm/${userId}/mark-read`) } catch {}
+    try {
+      await api.post(`/dm/${userId}/mark-read`)
+      window.dispatchEvent(new Event('unread-messages-updated'))
+    } catch {}
     navigate(-1)
   }
 

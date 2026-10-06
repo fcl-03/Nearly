@@ -95,14 +95,14 @@ export default function MessagesPage() {
     const dy = e.changedTouches[0].clientY - touchStart.current.y
     touchStart.current = null
     // Swipe horizontal franc uniquement (on ignore un scroll vertical)
-    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
       if (dx < 0 && tab === 'active') setTab('dm')        // vers la gauche → MP
       else if (dx > 0 && tab === 'dm') setTab('active')   // vers la droite → Sorties
     }
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
 
       {/* ── En-tête ── */}
       <div style={{ padding: '30px 20px 16px' }}>
@@ -130,7 +130,7 @@ export default function MessagesPage() {
       </div>
 
       {/* ── Contenu ── */}
-      <div style={{ flex: 1, overflowY: 'auto' }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <div style={{ flex: 1, overflowY: 'auto' }}>
         {tab === 'active' && (
           eventsLoading ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '48px 0' }}>
