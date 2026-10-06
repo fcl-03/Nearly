@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { Map, MessageCircle, Users, User } from 'lucide-react'
 import api from '../../services/api'
+import { useToastStore } from '../../stores/toastStore'
 
 // Navigation fixe en bas — Figma: BottomNav
 const ITEMS = [
@@ -16,6 +17,7 @@ export default function BottomNav() {
   const [friendRequestsCount, setFriendRequestsCount] = useState(0)
   const [unreadMessages, setUnreadMessages] = useState(0)
   const [unreadNotifs, setUnreadNotifs] = useState(0)
+  const prevMsgRef = useRef(null) // dernier total de messages non lus (pour détecter l'arrivée)
 
   // Charger le nombre de demandes d'ami pour le badge
   useEffect(() => {
@@ -56,7 +58,20 @@ export default function BottomNav() {
         api.get('/events/unread-counts').then(({ data }) => Object.values(data).reduce((s, n) => s + n, 0)).catch(() => 0),
         api.get('/dm/unread-count').then(({ data }) => data.count || 0).catch(() => 0),
       ]).then(([groupUnread, dmUnread]) => {
-        setUnreadMessages(groupUnread + dmUnread)
+        const total = groupUnread + dmUnread
+        // Bannière in-app si de nouveaux messages arrivent — mais pas à la 1re
+        // charge, et pas quand on est déjà dans les messages (on les voit).
+        const path = window.location.pathname
+        if (
+          prevMsgRef.current !== null &&
+          total > prevMsgRef.current &&
+          !path.startsWith('/messages') &&
+          !path.startsWith('/dm')
+        ) {
+          useToastStore.getState().show('Nouveau message', '💬')
+        }
+        prevMsgRef.current = total
+        setUnreadMessages(total)
       })
     }
     fetchUnread()

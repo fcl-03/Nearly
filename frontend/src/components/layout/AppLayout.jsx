@@ -4,6 +4,7 @@ import { useAuthStore } from '../../stores/authStore'
 import api from '../../services/api'
 import BottomNav from './BottomNav'
 import Spinner from '../ui/Spinner'
+import InAppBanner from '../ui/InAppBanner'
 
 // Layout principal — mobile first, pas de sidebar, BottomNav fixe
 export default function AppLayout() {
@@ -56,6 +57,8 @@ export default function AppLayout() {
         alignItems: 'center',
       }}
     >
+      <InAppBanner />
+
       {/* Skip-to-content pour accessibilité clavier */}
       <a
         href="#main-content"

@@ -2,11 +2,12 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import MarkerClusterGroup from 'react-leaflet-cluster'
-import { Plus, Bell } from 'lucide-react'
+import { Plus, Bell, Search, SlidersHorizontal, MapPin, Moon, Sun, Bug, LifeBuoy } from 'lucide-react'
 import L from 'leaflet'
 import api from '../../services/api'
 import { getCat, formatTime } from '../../utils/categories'
 import { useThemeStore } from '../../stores/themeStore'
+import { useAuthStore } from '../../stores/authStore'
 import { getTileUrl } from '../../utils/mapTiles'
 import Spinner from '../../components/ui/Spinner'
 import EventCard from './EventCard'
@@ -93,15 +94,58 @@ function isToday(isoString) {
 // Clé sessionStorage pour mémoriser la position entre navigations
 const GEO_KEY = 'nearly_user_pos'
 const CITY_KEY = 'nearly_user_city'
+const TOMTOM_KEY = import.meta.env.VITE_TOMTOM_KEY
+
+// Recherche de villes (TomTom) — pour consulter les sorties d'une autre ville
+async function searchCities(query) {
+  if (!query || query.length < 2) return []
+  try {
+    const url = `https://api.tomtom.com/search/2/search/${encodeURIComponent(query)}.json?key=${TOMTOM_KEY}&language=fr-FR&countrySet=FR&entityTypeSet=Municipality&limit=5`
+    const r = await fetch(url)
+    const data = await r.json()
+    return (data.results || [])
+      .filter(res => res.position)
+      .map(res => ({
+        name: res.address?.municipality || res.address?.freeformAddress || query,
+        lat: res.position.lat,
+        lon: res.position.lon,
+      }))
+  } catch { return [] }
+}
+
+// Ligne du menu réglages
+function SettingItem({ icon, label, onClick, last }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        width: '100%', textAlign: 'left', padding: '12px 14px',
+        background: 'none', border: 'none',
+        borderBottom: last ? 'none' : '1px solid var(--border-color)',
+        color: 'var(--text)', fontSize: 14, cursor: 'pointer',
+        fontFamily: 'DM Sans, sans-serif',
+        display: 'flex', alignItems: 'center', gap: 10,
+      }}
+    >
+      <span style={{ color: 'var(--text-secondary)', display: 'flex' }}>{icon}</span>
+      {label}
+    </button>
+  )
+}
 
 export default function EventsPage() {
   const navigate = useNavigate()
-  const { theme } = useThemeStore()
+  const { theme, toggleTheme } = useThemeStore()
+  const { user } = useAuthStore()
   const tileUrl = getTileUrl(theme)
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [category, setCategory] = useState('')
   const [activeFilter, setActiveFilter] = useState('')
+  const [cityQuery, setCityQuery] = useState('')
+  const [citySuggestions, setCitySuggestions] = useState([])
+  const [searchFocused, setSearchFocused] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   // Initialiser depuis sessionStorage si disponible (survit à la navigation)
   const [userPos, setUserPos] = useState(() => {
@@ -247,6 +291,27 @@ export default function EventsPage() {
   const mapCenter = userPos
     ?? (events[0] ? [events[0].latitude, events[0].longitude] : [48.8566, 2.3522])
 
+  // Recherche de villes (debounce) pour consulter les sorties ailleurs
+  useEffect(() => {
+    if (cityQuery.trim().length < 2) { setCitySuggestions([]); return }
+    const t = setTimeout(async () => {
+      setCitySuggestions(await searchCities(cityQuery))
+    }, 300)
+    return () => clearTimeout(t)
+  }, [cityQuery])
+
+  // Sélection d'une ville → recentre le feed dessus (déclenche un refetch via userPos)
+  function selectCity(c) {
+    const pos = [c.lat, c.lon]
+    setUserPos(pos)
+    sessionStorage.setItem(GEO_KEY, JSON.stringify(pos))
+    setCity(c.name)
+    sessionStorage.setItem(CITY_KEY, c.name)
+    setCityQuery('')
+    setCitySuggestions([])
+    setSearchFocused(false)
+  }
+
   function handleFilterClick(key) {
     setActiveFilter(key)
     // Les filtres catégorie sont envoyés à l'API, "Ce soir" est local
@@ -321,25 +386,87 @@ export default function EventsPage() {
               )}
             </button>
 
-          {/* Chip localisation + bouton "Près de moi" */}
-          <button
-            onClick={handleGeolocate}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              background: 'var(--surface2)',
-              borderRadius: 999,
-              padding: '6px 14px',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: 13,
-              color: 'var(--text-secondary)',
-              fontFamily: 'DM Sans, sans-serif',
-            }}
-          >
-            📍 {city}
-          </button>
+            {/* Avatar → page profil */}
+            <button
+              onClick={() => navigate('/profile')}
+              aria-label="Mon profil"
+              style={{
+                width: 36, height: 36, borderRadius: '50%',
+                border: '2px solid var(--accent-border)', padding: 0,
+                overflow: 'hidden', cursor: 'pointer', background: 'var(--surface2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              {user?.avatar_url
+                ? <img src={user.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', fontFamily: 'Syne, sans-serif' }}>{user?.first_name?.[0]?.toUpperCase() || '?'}</span>
+              }
+            </button>
+          </div>
+        </div>
+
+        {/* Barre de recherche de ville + réglages */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+          <div style={{ flex: 1, position: 'relative', minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface2)', borderRadius: 11, padding: '10px 14px' }}>
+              <Search size={18} color="var(--text-tertiary)" style={{ flexShrink: 0 }} />
+              <input
+                value={cityQuery}
+                onChange={e => setCityQuery(e.target.value)}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
+                placeholder={city}
+                style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', outline: 'none', color: 'var(--text)', fontFamily: 'DM Sans, sans-serif' }}
+              />
+              <button
+                onClick={handleGeolocate}
+                aria-label="Ma position"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent-text)', padding: 0, display: 'flex', flexShrink: 0 }}
+              >
+                <MapPin size={18} />
+              </button>
+            </div>
+
+            {/* Suggestions de villes */}
+            {searchFocused && citySuggestions.length > 0 && (
+              <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, background: 'var(--surface2)', border: '1px solid var(--border-color)', borderRadius: 11, overflow: 'hidden', zIndex: 30, boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
+                {citySuggestions.map((c, i) => (
+                  <button
+                    key={i}
+                    onMouseDown={() => selectCity(c)}
+                    style={{ width: '100%', textAlign: 'left', padding: '11px 14px', background: 'none', border: 'none', borderBottom: i < citySuggestions.length - 1 ? '1px solid var(--border-color)' : 'none', color: 'var(--text)', fontSize: 14, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', display: 'flex', alignItems: 'center', gap: 8 }}
+                  >
+                    <MapPin size={15} color="var(--text-tertiary)" /> {c.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Bouton réglages + menu */}
+          <div style={{ position: 'relative', flexShrink: 0 }}>
+            <button
+              onClick={() => setSettingsOpen(o => !o)}
+              aria-label="Réglages"
+              style={{ width: 42, height: 42, borderRadius: 11, background: 'var(--surface2)', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <SlidersHorizontal size={18} />
+            </button>
+            {settingsOpen && (
+              <>
+                <div onClick={() => setSettingsOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+                <div style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, width: 210, background: 'var(--surface2)', border: '1px solid var(--border-color)', borderRadius: 14, overflow: 'hidden', zIndex: 50, boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
+                  <SettingItem
+                    icon={theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
+                    label={theme === 'dark' ? 'Mode jour' : 'Mode nuit'}
+                    onClick={() => { toggleTheme(); setSettingsOpen(false) }}
+                  />
+                  <SettingItem icon={<Bug size={17} />} label="Signaler un bug" onClick={() => { setSettingsOpen(false); navigate('/settings') }} />
+                  <SettingItem icon={<LifeBuoy size={17} />} label="Contacter le support" onClick={() => { setSettingsOpen(false); window.location.href = 'mailto:contact@jowen.fr' }} last />
+                </div>
+              </>
+            )}
           </div>
         </div>
 
