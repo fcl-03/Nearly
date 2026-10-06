@@ -63,9 +63,16 @@ export default function BottomNav() {
     const interval = setInterval(fetchUnread, 30000)
     // Rafraîchir immédiatement quand un message arrive via WS
     window.addEventListener('unread-messages-updated', fetchUnread)
+    // Rafraîchir au retour sur l'app (les MP n'ont pas de WS temps réel comme
+    // les chats de groupe → sans ça, la pastille MP n'apparaît qu'au polling 30s)
+    function onVisible() { if (document.visibilityState === 'visible') fetchUnread() }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', fetchUnread)
     return () => {
       clearInterval(interval)
       window.removeEventListener('unread-messages-updated', fetchUnread)
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', fetchUnread)
     }
   }, [])
 

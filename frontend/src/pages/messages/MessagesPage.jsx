@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MessagesSquare, Mail } from 'lucide-react'
 import api from '../../services/api'
@@ -84,6 +84,23 @@ export default function MessagesPage() {
   // Compter les non-lus events
   const totalEventUnread = Object.values(unreadCounts).reduce((s, n) => s + n, 0)
 
+  // Swipe horizontal pour basculer entre les onglets (Sorties ↔ Messages privés)
+  const touchStart = useRef(null)
+  function onTouchStart(e) {
+    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+  }
+  function onTouchEnd(e) {
+    if (!touchStart.current) return
+    const dx = e.changedTouches[0].clientX - touchStart.current.x
+    const dy = e.changedTouches[0].clientY - touchStart.current.y
+    touchStart.current = null
+    // Swipe horizontal franc uniquement (on ignore un scroll vertical)
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      if (dx < 0 && tab === 'active') setTab('dm')        // vers la gauche → MP
+      else if (dx > 0 && tab === 'dm') setTab('active')   // vers la droite → Sorties
+    }
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
 
@@ -113,7 +130,7 @@ export default function MessagesPage() {
       </div>
 
       {/* ── Contenu ── */}
-      <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div style={{ flex: 1, overflowY: 'auto' }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         {tab === 'active' && (
           eventsLoading ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '48px 0' }}>

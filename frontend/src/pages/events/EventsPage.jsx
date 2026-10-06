@@ -164,8 +164,8 @@ export default function EventsPage() {
     return () => clearInterval(interval)
   }, [])
 
-  const fetchEvents = useCallback(async () => {
-    setLoading(true)
+  const fetchEvents = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true)
     try {
       const p = new URLSearchParams()
       if (category && category !== 'Ce soir') p.set('category', category)
@@ -177,12 +177,30 @@ export default function EventsPage() {
       const { data } = await api.get(`/events?${p}`)
       setEvents(data)
     } catch {}
-    finally { setLoading(false) }
+    finally { if (!silent) setLoading(false) }
   }, [category, userPos])
 
   // Fetch seulement quand la géoloc est prête (position connue ou refusée)
   useEffect(() => {
     if (geoReady) fetchEvents()
+  }, [fetchEvents, geoReady])
+
+  // Rafraîchir le feed EN SILENCE (sans spinner) : au retour sur l'app
+  // (sorties créées entre-temps) et par polling léger. Donne l'impression
+  // d'un feed à jour sans passer par le temps réel complet (WebSocket).
+  useEffect(() => {
+    if (!geoReady) return
+    function refresh() {
+      if (document.visibilityState === 'visible') fetchEvents(true)
+    }
+    document.addEventListener('visibilitychange', refresh)
+    window.addEventListener('focus', refresh)
+    const interval = setInterval(refresh, 45000)
+    return () => {
+      document.removeEventListener('visibilitychange', refresh)
+      window.removeEventListener('focus', refresh)
+      clearInterval(interval)
+    }
   }, [fetchEvents, geoReady])
 
   // Géolocalisation au montage — uniquement si pas déjà en cache
@@ -385,7 +403,7 @@ export default function EventsPage() {
             zoomControl={false}
             attributionControl={false}
           >
-            <TileLayer url={tileUrl} noWrap />
+            <TileLayer url={tileUrl} noWrap keepBuffer={6} updateWhenIdle={false} updateWhenZooming={false} />
             <FitBounds events={displayedEvents} />
             <MarkerClusterGroup
               chunkedLoading
