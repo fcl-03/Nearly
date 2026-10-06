@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuthStore } from '../../stores/authStore'
 import { Navigate, useNavigate } from 'react-router-dom'
-import { CheckCircle, XCircle, Shield, Flag, Users, FileCheck, BarChart2, Calendar, Trash2, Bug } from 'lucide-react'
+import { CheckCircle, XCircle, Shield, Flag, Users, FileCheck, BarChart2, Calendar, Trash2, Bug, Megaphone } from 'lucide-react'
 import api from '../../services/api'
 import Spinner from '../../components/ui/Spinner'
+import AdsSection from './AdsSection'
 
 const TABS = [
   { key: 'stats',    label: 'Stats',         Icon: BarChart2 },
@@ -12,6 +13,7 @@ const TABS = [
   { key: 'bugs',     label: 'Bugs',          Icon: Bug },
   { key: 'verifs',   label: 'Vérifications', Icon: FileCheck },
   { key: 'users',    label: 'Utilisateurs',  Icon: Users },
+  { key: 'ads',      label: 'Pubs',          Icon: Megaphone },
 ]
 
 export default function AdminPage() {
@@ -62,6 +64,7 @@ export default function AdminPage() {
         {tab === 'bugs'    && <BugReportsSection />}
         {tab === 'verifs'  && <VerificationsSection />}
         {tab === 'users'   && <UsersSection />}
+        {tab === 'ads'     && <AdsSection />}
       </div>
     </div>
   )
