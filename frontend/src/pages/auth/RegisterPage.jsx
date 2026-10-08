@@ -4,6 +4,7 @@ import { Eye, EyeOff } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { INTERESTS } from '../../utils/categories'
 import api from '../../services/api'
+import { compressImage } from '../../utils/compressImage'
 import CharterContent from '../legal/CharterContent'
 
 // Page d'inscription en 3 étapes — inspirée du design system Jowen
@@ -83,7 +84,7 @@ export default function RegisterPage() {
     try {
       if (avatar) {
         const fd = new FormData()
-        fd.append('avatar', avatar)
+        fd.append('avatar', await compressImage(avatar, { maxSize: 800 }))
         await api.post('/users/me/avatar', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
       }
       const { data } = await api.get('/users/interests')

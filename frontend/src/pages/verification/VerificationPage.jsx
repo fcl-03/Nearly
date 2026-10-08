@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import api from '../../services/api'
+import { compressImage } from '../../utils/compressImage'
 
 // Infos affichées sur l'écran d'introduction
 const STEPS_INFO = [
@@ -97,7 +98,7 @@ export default function VerificationPage() {
     try {
       const fd = new FormData()
       fd.append('selfie', selfie)
-      fd.append('id_card', idCard)
+      fd.append('id_card', await compressImage(idCard, { maxSize: 1600, quality: 0.85 }))
       await api.post('/verification/submit', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
       setStep('done')
     } catch (err) {

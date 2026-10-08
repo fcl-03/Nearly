@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { X, Image, Tag, ChevronRight, Check } from 'lucide-react'
 import api from '../../services/api'
+import { compressImage } from '../../utils/compressImage'
 import Spinner from './Spinner'
 
 /**
@@ -66,7 +67,7 @@ export default function PhotoUploadModal({ onClose, onPublished, initialFile = n
     setLoading(true)
     try {
       const fd = new FormData()
-      fd.append('photo', file)
+      fd.append('photo', await compressImage(file, { maxSize: 1280 }))
       if (description.trim()) fd.append('description', description.trim())
       if (tagged.length > 0) fd.append('tags', JSON.stringify(tagged.map(t => t.id)))
       const { data } = await api.post('/users/me/photos', fd, {

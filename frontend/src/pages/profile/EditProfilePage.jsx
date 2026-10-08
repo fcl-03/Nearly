@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Camera } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import api from '../../services/api'
+import { compressImage } from '../../utils/compressImage'
 import Spinner from '../../components/ui/Spinner'
 
 // Page dédiée à la modification du profil
@@ -67,7 +68,7 @@ export default function EditProfilePage() {
     setAvatarLoading(true)
     try {
       const fd = new FormData()
-      fd.append('avatar', file)
+      fd.append('avatar', await compressImage(file, { maxSize: 800 }))
       await api.post('/users/me/avatar', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
       const me = await api.get('/users/me')
       setUser(me.data)

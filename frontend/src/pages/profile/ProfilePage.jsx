@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Shield, Plus, Trash2, Heart, X, ChevronLeft, ChevronRight, Pencil, Check, Settings, MapPin, Mail, Clock, XCircle, ScanFace, CalendarDays, Camera, Image as ImageIcon } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import api from '../../services/api'
+import { compressImage } from '../../utils/compressImage'
 import { getCat } from '../../utils/categories'
 import Spinner from '../../components/ui/Spinner'
 import PhotoUploadModal from '../../components/ui/PhotoUploadModal'
@@ -73,7 +74,7 @@ export default function ProfilePage() {
     setAvatarLoading(true)
     try {
       const fd = new FormData()
-      fd.append('avatar', file)
+      fd.append('avatar', await compressImage(file, { maxSize: 800 }))
       await api.post('/users/me/avatar', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
       const me = await api.get('/users/me')
       setUser(me.data)
@@ -91,7 +92,7 @@ export default function ProfilePage() {
     setCoverUploading(event.id)
     try {
       const fd = new FormData()
-      fd.append('cover', file)
+      fd.append('cover', await compressImage(file, { maxSize: 1280 }))
       const { data } = await api.post(`/events/${event.id}/cover`, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
       setJoinedEvents(prev => prev.map(ev => ev.id === event.id ? { ...ev, cover_url: data.cover_url } : ev))
     } catch (err) {
