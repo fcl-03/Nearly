@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker } from 'react-leaflet'
-import { ArrowLeft, Clock, MapPin, UserPlus } from 'lucide-react'
+import { ArrowLeft, Clock, MapPin, UserPlus, Pencil } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import api from '../../services/api'
 import { getCat, formatTime } from '../../utils/categories'
@@ -9,6 +9,7 @@ import { useThemeStore } from '../../stores/themeStore'
 import { getTileUrl } from '../../utils/mapTiles'
 import Spinner from '../../components/ui/Spinner'
 import SectionLabel from '../../components/ui/SectionLabel'
+import EditEventModal from '../../components/ui/EditEventModal'
 
 // Page de détail d'un événement — Figma: ActivityDetails
 export default function EventDetailPage() {
@@ -27,6 +28,7 @@ export default function EventDetailPage() {
   const [deleteVoteSent, setDeleteVoteSent] = useState(false)
   const [justJoined, setJustJoined] = useState(false)
   const [showInvite, setShowInvite] = useState(false)
+  const [showEdit, setShowEdit] = useState(false)
   const [friends, setFriends] = useState([])
   const [selectedFriends, setSelectedFriends] = useState(new Set())
   const [inviteLoading, setInviteLoading] = useState(false)
@@ -449,6 +451,21 @@ export default function EventDetailPage() {
         <div style={{ pointerEvents: 'auto' }}>
           {isCreator ? (
             <div style={{ display: 'flex', gap: 10 }}>
+              {/* Modifier la sortie (le backend limite aux 12h) */}
+              <button
+                onClick={() => setShowEdit(true)}
+                style={{
+                  flex: 1,
+                  background: 'var(--surface2)',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text)',
+                  fontWeight: 700, fontSize: 13, fontFamily: 'DM Sans, sans-serif',
+                  padding: '10px 0', borderRadius: 11, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                }}
+              >
+                <Pencil size={15} /> Modifier
+              </button>
               {/* Inviter des amis */}
               <button
                 onClick={openInvite}
@@ -797,6 +814,10 @@ export default function EventDetailPage() {
       )}
 
       {/* ── Modal invitation amis ── */}
+      {showEdit && (
+        <EditEventModal event={event} onClose={() => setShowEdit(false)} onSaved={fetchEvent} />
+      )}
+
       {showInvite && (
         <div
           onClick={() => setShowInvite(false)}
