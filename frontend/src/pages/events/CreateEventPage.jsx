@@ -100,7 +100,7 @@ export default function CreateEventPage() {
     const e = {}
     if (!form.title.trim()) e.title = 'Titre requis.'
     else if (form.title.trim().length > 60) e.title = 'Le titre ne peut pas dépasser 60 caractères.'
-    if (!form.description.trim() || form.description.trim().length < 20) e.description = 'La description doit contenir au moins 20 caractères.'
+    if (!form.description.trim() || form.description.trim().length < 5) e.description = 'La description doit contenir au moins 5 caractères.'
     if (!form.category) e.category = 'Catégorie requise.'
     if (form.category === 'autre' && !form.customCategory.trim()) e.category = 'Précise la catégorie.'
     if (!form.location_name.trim()) e.location_name = 'Lieu requis.'
@@ -141,7 +141,7 @@ export default function CreateEventPage() {
         if (Array.isArray(valErrors) && valErrors.length > 0) {
           const field = valErrors[0]?.loc?.slice(-1)[0]
           const msg = valErrors[0]?.msg
-          if (field === 'description') setErrors({ _global: 'Description requise (minimum 20 caractères).' })
+          if (field === 'description') setErrors({ _global: 'Description requise (minimum 5 caractères).' })
           else setErrors({ _global: `Champ invalide : ${field} — ${msg}` })
         } else {
           setErrors({ _global: detail || 'Données invalides.' })
@@ -562,8 +562,8 @@ export default function CreateEventPage() {
               {errors.description
                 ? <span style={{ fontSize: 12, color: 'var(--orange)' }}>{errors.description}</span>
                 : <span />}
-              <span style={{ fontSize: 11, color: form.description.length < 20 ? 'var(--orange)' : 'var(--text-tertiary)' }}>
-                {form.description.length}/20 min
+              <span style={{ fontSize: 11, color: form.description.length < 5 ? 'var(--orange)' : 'var(--text-tertiary)' }}>
+                {form.description.length}/5 min
               </span>
             </div>
           </div>

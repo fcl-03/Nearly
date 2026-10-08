@@ -50,8 +50,8 @@ class EventCreate(BaseModel):
     @field_validator("description")
     @classmethod
     def description_length(cls, v: str) -> str:
-        if len(v.strip()) < 20:
-            raise ValueError("La description doit contenir au moins 20 caractères")
+        if len(v.strip()) < 5:
+            raise ValueError("La description doit contenir au moins 5 caractères")
         if len(v) > 2000:
             raise ValueError("La description ne peut pas dépasser 2000 caractères")
         return v

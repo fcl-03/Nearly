@@ -23,6 +23,26 @@ export default function AppLayout() {
     }
   }, [accessToken])
 
+  // Rafraîchir le profil au retour sur l'app + polling léger : si un admin valide
+  // l'identité (ou le premium change), le statut est pris en compte SANS avoir à
+  // se déconnecter/reconnecter. C'était le gros point noir du refresh.
+  useEffect(() => {
+    if (!accessToken) return
+    function refreshUser() {
+      if (document.visibilityState === 'visible') {
+        api.get('/users/me').then(r => setUser(r.data)).catch(() => {})
+      }
+    }
+    document.addEventListener('visibilitychange', refreshUser)
+    window.addEventListener('focus', refreshUser)
+    const interval = setInterval(refreshUser, 60000)
+    return () => {
+      document.removeEventListener('visibilitychange', refreshUser)
+      window.removeEventListener('focus', refreshUser)
+      clearInterval(interval)
+    }
+  }, [accessToken])
+
   // Rediriger vers login si non authentifié
   if (!accessToken) return <Navigate to="/login" replace />
 
