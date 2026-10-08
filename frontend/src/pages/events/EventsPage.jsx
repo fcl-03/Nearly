@@ -438,6 +438,12 @@ export default function EventsPage() {
                 onFocus={() => setSearchFocused(true)}
                 onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
                 placeholder={city}
+                type="search"
+                name="city-search"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck={false}
                 style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', outline: 'none', color: 'var(--text)', fontFamily: 'DM Sans, sans-serif' }}
               />
               <button

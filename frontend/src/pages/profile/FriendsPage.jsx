@@ -164,7 +164,13 @@ export default function FriendsPage() {
           <input
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Rechercher par @username ou nom"
+            placeholder="Rechercher par @pseudo ou nom"
+            type="search"
+            name="friend-search"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="none"
+            spellCheck={false}
             style={{
               width: '100%', background: 'var(--surface2)', border: '1px solid var(--border-color)',
               borderRadius: 11, padding: '10px 14px 10px 36px', fontSize: 14, color: 'var(--text)',

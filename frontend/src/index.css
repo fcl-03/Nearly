@@ -86,6 +86,17 @@ html:not(.light) input[type="time"] { color-scheme: dark; }
 html.light input[type="date"],
 html.light input[type="time"] { color-scheme: light; }
 
+/* iOS attribue aux inputs date/time une largeur intrinsèque qui débordait du
+   conteneur (ignore width:100%) → on neutralise l'apparence native pour qu'ils
+   respectent la largeur CSS. */
+input[type="date"],
+input[type="time"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+  max-width: 100%;
+}
+
 /* ── Responsive — largeur contenu adaptative ── */
 .nearly-main {
   max-width: 100%;
