@@ -69,21 +69,30 @@ export default function EditEventModal({ event, onClose, onSaved }) {
 
         <div>
           <label style={lbl}>Catégorie</label>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {CATEGORIES.map(c => (
-              <button
-                key={c.key}
-                onClick={() => setCategory(c.key)}
-                style={{
-                  background: category === c.key ? 'var(--accent)' : 'var(--surface2)',
-                  color: category === c.key ? 'var(--on-accent)' : 'var(--text-secondary)',
-                  border: 'none', borderRadius: 999, padding: '7px 13px', cursor: 'pointer',
-                  fontFamily: 'DM Sans, sans-serif', fontSize: 13, fontWeight: category === c.key ? 700 : 400,
-                }}
-              >
-                {c.emoji} {c.label}
-              </button>
-            ))}
+          {/* Même grille d'icônes que la page « Créer une sortie » (cohérence visuelle) */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+            {CATEGORIES.map(cat => {
+              const isSelected = category === cat.key
+              return (
+                <button
+                  key={cat.key}
+                  type="button"
+                  onClick={() => setCategory(cat.key)}
+                  style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    gap: 6, borderRadius: 14, padding: '10px 4px', aspectRatio: '1',
+                    background: isSelected ? 'color-mix(in srgb, var(--accent) 10%, transparent)' : 'var(--surface2)',
+                    border: isSelected ? '2px solid var(--accent)' : '1px solid var(--border-color)',
+                    cursor: 'pointer', transition: 'all 0.15s',
+                  }}
+                >
+                  <span style={{ fontSize: 22 }}>{cat.emoji}</span>
+                  <span style={{ fontSize: 10, color: isSelected ? 'var(--accent)' : 'var(--text-secondary)', fontFamily: 'Syne, sans-serif', fontWeight: isSelected ? 700 : 400 }}>
+                    {cat.label}
+                  </span>
+                </button>
+              )
+            })}
           </div>
         </div>
 

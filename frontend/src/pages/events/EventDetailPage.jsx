@@ -450,59 +450,52 @@ export default function EventDetailPage() {
       >
         <div style={{ pointerEvents: 'auto' }}>
           {isCreator ? (
-            <div style={{ display: 'flex', gap: 10 }}>
-              {/* Modifier la sortie (le backend limite aux 12h) */}
-              <button
-                onClick={() => setShowEdit(true)}
-                style={{
-                  flex: 1,
-                  background: 'var(--surface2)',
-                  border: '1px solid var(--border-color)',
-                  color: 'var(--text)',
-                  fontWeight: 700, fontSize: 13, fontFamily: 'DM Sans, sans-serif',
-                  padding: '10px 0', borderRadius: 11, cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                }}
-              >
-                <Pencil size={15} /> Modifier
-              </button>
-              {/* Inviter des amis */}
-              <button
-                onClick={openInvite}
-                style={{
-                  flex: 1,
-                  background: 'rgba(232,255,71,0.08)',
-                  border: '1px solid rgba(232,255,71,0.25)',
-                  color: 'var(--accent)',
-                  fontWeight: 700,
-                  fontSize: 13,
-                  fontFamily: 'DM Sans, sans-serif',
-                  padding: '10px 0',
-                  borderRadius: 11,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                }}
-              >
-                <UserPlus size={15} />
-                Inviter des amis
-              </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {/* Ligne 1 : actions principales côte à côte */}
+              <div style={{ display: 'flex', gap: 10 }}>
+                {/* Modifier la sortie (le backend limite aux 12h) */}
+                <button
+                  onClick={() => setShowEdit(true)}
+                  style={{
+                    flex: 1,
+                    background: 'var(--surface2)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text)',
+                    fontWeight: 700, fontSize: 13, fontFamily: 'DM Sans, sans-serif',
+                    padding: '11px 0', borderRadius: 11, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  }}
+                >
+                  <Pencil size={15} /> Modifier
+                </button>
+                {/* Inviter des amis */}
+                <button
+                  onClick={openInvite}
+                  style={{
+                    flex: 1,
+                    background: 'rgba(232,255,71,0.08)',
+                    border: '1px solid rgba(232,255,71,0.25)',
+                    color: 'var(--accent)',
+                    fontWeight: 700, fontSize: 13, fontFamily: 'DM Sans, sans-serif',
+                    padding: '11px 0', borderRadius: 11, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  }}
+                >
+                  <UserPlus size={15} />
+                  Inviter des amis
+                </button>
+              </div>
+              {/* Ligne 2 : supprimer (ou vote en cours) en pleine largeur — action secondaire */}
               {event.deletion_poll ? (
                 <button
                   onClick={() => navigate(`/messages/${event.id}`)}
                   style={{
-                    flex: 1,
+                    width: '100%',
                     background: 'rgba(255,122,61,0.1)',
                     border: '1px solid rgba(255,122,61,0.3)',
                     color: 'var(--orange)',
-                    fontWeight: 700,
-                    fontSize: 13,
-                    fontFamily: 'DM Sans, sans-serif',
-                    padding: '10px 0',
-                    borderRadius: 11,
-                    cursor: 'pointer',
+                    fontWeight: 700, fontSize: 13, fontFamily: 'DM Sans, sans-serif',
+                    padding: '11px 0', borderRadius: 11, cursor: 'pointer',
                   }}
                 >
                   Vote en cours...
@@ -511,19 +504,15 @@ export default function EventDetailPage() {
                 <button
                   onClick={handleDelete}
                   style={{
-                    flex: 1,
-                    background: 'rgba(255,122,61,0.1)',
-                    border: '1px solid rgba(255,122,61,0.3)',
-                    color: 'var(--orange)',
-                    fontWeight: 700,
-                    fontSize: 13,
-                    fontFamily: 'DM Sans, sans-serif',
-                    padding: '10px 0',
-                    borderRadius: 11,
-                    cursor: 'pointer',
+                    width: '100%',
+                    background: 'none',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-tertiary)',
+                    fontWeight: 600, fontSize: 13, fontFamily: 'DM Sans, sans-serif',
+                    padding: '11px 0', borderRadius: 11, cursor: 'pointer',
                   }}
                 >
-                  Supprimer
+                  Supprimer la sortie
                 </button>
               )}
             </div>

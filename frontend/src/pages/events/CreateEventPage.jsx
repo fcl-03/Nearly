@@ -511,9 +511,10 @@ export default function CreateEventPage() {
             )}
           </div>
 
-          {/* Date + Heure */}
-          <div style={{ display: 'flex', gap: 12 }}>
-            <div style={{ flex: 1 }}>
+          {/* Date + Heure — empilés : les pickers natifs iOS ont une largeur mini
+              et se chevauchaient côte à côte sur petit écran (375px). */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div>
               <FieldLabel>Date *</FieldLabel>
               <input
                 type="date"
@@ -527,7 +528,7 @@ export default function CreateEventPage() {
               />
               {errors.date && <ErrorMsg>{errors.date}</ErrorMsg>}
             </div>
-            <div style={{ flex: 1 }}>
+            <div>
               <FieldLabel>Heure *</FieldLabel>
               <input
                 type="time"
