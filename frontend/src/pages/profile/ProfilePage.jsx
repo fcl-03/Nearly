@@ -9,12 +9,14 @@ import Spinner from '../../components/ui/Spinner'
 import PhotoUploadModal from '../../components/ui/PhotoUploadModal'
 import SectionLabel from '../../components/ui/SectionLabel'
 import SouvenirModal from '../../components/ui/SouvenirModal'
+import ImageCropper from '../../components/ui/ImageCropper'
 
 // Page de profil — Figma: Profile
 export default function ProfilePage() {
   const navigate = useNavigate()
   const { user, setUser } = useAuthStore()
   const [avatarLoading, setAvatarLoading] = useState(false)
+  const [cropFile, setCropFile] = useState(null) // fichier avatar en cours de recadrage
   const [joinedEvents, setJoinedEvents] = useState([])
   const [joinedEventsCount, setJoinedEventsCount] = useState(0)
   const [resendStatus, setResendStatus] = useState(null) // null | 'sending' | 'sent' | 'error'
@@ -68,13 +70,18 @@ export default function ProfilePage() {
     } catch {}
   }
 
-  async function handleAvatarChange(e) {
+  function handleAvatarChange(e) {
     const file = e.target.files?.[0]
-    if (!file) return
+    e.target.value = '' // permet de re-sélectionner le même fichier
+    if (file) setCropFile(file) // → ouvre le recadrage
+  }
+
+  async function uploadAvatar(croppedFile) {
+    setCropFile(null)
     setAvatarLoading(true)
     try {
       const fd = new FormData()
-      fd.append('avatar', await compressImage(file, { maxSize: 800 }))
+      fd.append('avatar', croppedFile) // déjà recadré + compressé par le cropper
       await api.post('/users/me/avatar', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
       const me = await api.get('/users/me')
       setUser(me.data)
@@ -678,6 +685,10 @@ export default function ProfilePage() {
       {/* Récap souvenir d'une sortie */}
       {souvenirEventId && (
         <SouvenirModal eventId={souvenirEventId} onClose={() => setSouvenirEventId(null)} />
+      )}
+
+      {cropFile && (
+        <ImageCropper file={cropFile} onCancel={() => setCropFile(null)} onConfirm={uploadAvatar} />
       )}
 
       {/* ── Succès (en bas, discret) ── */}
