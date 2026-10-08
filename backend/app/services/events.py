@@ -292,6 +292,13 @@ async def update_event(
             detail="Seul le créateur peut modifier cette sortie",
         )
 
+    # Règle : modifiable seulement dans les 12h suivant la création (bypass admin)
+    if not user.is_admin and datetime.now(timezone.utc) - event.created_at > timedelta(hours=12):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Une sortie ne peut être modifiée que dans les 12h suivant sa création.",
+        )
+
     update_data = data.model_dump(exclude_unset=True)
 
     # Règle métier : le nombre de participants n'est PAS modifiable après publication
@@ -311,6 +318,23 @@ async def update_event(
 
     result = await db.execute(_event_query().where(Event.id == event.id))
     event = result.scalar_one()
+
+    # Prévenir les participants déjà inscrits (hors créateur) de la modification
+    if update_data:
+        from app.services.notifications import create_notification
+        to_notify = [p for p in event.participants if p.status == "joined" and p.user_id != user.id]
+        for p in to_notify:
+            await create_notification(
+                db,
+                user_id=p.user_id,
+                type="event_updated",
+                content=f"La sortie « {event.title} » a été modifiée",
+                actor_id=user.id,
+                related_id=str(event.id),
+            )
+        if to_notify:
+            await db.commit()
+
     return _build_response(event, current_user_id=user.id)
 
 

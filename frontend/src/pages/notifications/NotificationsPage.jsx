@@ -12,6 +12,7 @@ function notifMeta(type) {
     case 'event_joined':     return { emoji: '🎉', color: '#FF7A3D' }
     case 'event_invite':     return { emoji: '📩', color: '#E8FF47' }
     case 'join_request':     return { emoji: '🙋', color: '#E8FF47' }
+    case 'event_updated':    return { emoji: '✏️', color: '#FF7A3D' }
     case 'new_dm':           return { emoji: '💬', color: '#7C6FF7' }
     default:                 return { emoji: '🔔', color: '#858AA8' }
   }
@@ -63,6 +64,9 @@ export default function NotificationsPage() {
         break
       case 'join_request':
         // Demande de participation → la sortie, où le créateur accepte/refuse
+        if (notif.related_id) navigate(`/events/${notif.related_id}`)
+        break
+      case 'event_updated':
         if (notif.related_id) navigate(`/events/${notif.related_id}`)
         break
       case 'new_dm':

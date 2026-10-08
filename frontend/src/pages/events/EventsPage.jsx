@@ -136,7 +136,7 @@ function SettingItem({ icon, label, onClick, last }) {
 export default function EventsPage() {
   const navigate = useNavigate()
   const { theme, toggleTheme } = useThemeStore()
-  const { user } = useAuthStore()
+  const { user, setUser } = useAuthStore()
   const tileUrl = getTileUrl(theme)
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
@@ -272,6 +272,7 @@ export default function EventsPage() {
           const name = d.address?.city || d.address?.town || d.address?.village || 'Ma position'
           setCity(name)
           sessionStorage.setItem(CITY_KEY, name)
+          persistCity(name)
         } catch {}
       },
       () => {
@@ -311,6 +312,20 @@ export default function EventsPage() {
     setCitySuggestions([])
     setSearchFocused(false)
   }
+
+  // Persiste la ville RÉELLE du user en base (≠ ville recherchée) — nécessaire aux
+  // suggestions d'amis de la même ville (BUG 20 : sinon city = null → 0 suggestion).
+  function persistCity(name) {
+    if (name && name !== 'Ma position' && user?.city !== name) {
+      api.put('/users/me', { city: name }).then(({ data }) => setUser(data)).catch(() => {})
+    }
+  }
+
+  // Backfill pour les comptes existants sans ville en base
+  useEffect(() => {
+    if (user && !user.city && city && city !== 'Ma position') persistCity(city)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
 
   function handleFilterClick(key) {
     setActiveFilter(key)
