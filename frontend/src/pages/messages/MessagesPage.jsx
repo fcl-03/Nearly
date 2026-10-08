@@ -84,70 +84,36 @@ export default function MessagesPage() {
   // Compter les non-lus events
   const totalEventUnread = Object.values(unreadCounts).reduce((s, n) => s + n, 0)
 
-  // Slider horizontal (swipe) entre les panneaux Sorties ↔ MP.
-  // Transform CSS piloté par le state (clic onglet) + suivi du doigt via des
-  // listeners tactiles NON PASSIFS — seuls capables de bloquer le scroll
-  // vertical pendant un swipe horizontal (les handlers React sont passifs).
-  const containerRef = useRef(null)
-  const trackRef = useRef(null)
+  // Swipe horizontal entre Sorties ↔ MP via le SCROLL NATIF (scroll-snap) :
+  // bien plus fiable sur iOS que de piloter un transform à la main. Le conteneur
+  // scrolle horizontalement, chaque panneau fait 100% de large et « s'aimante ».
+  // On synchronise juste l'onglet actif avec la position du scroll.
+  const scrollerRef = useRef(null)
   const tabRef = useRef(tab)
+  const programmatic = useRef(false) // ignore le scroll déclenché par un clic d'onglet
   useEffect(() => { tabRef.current = tab }, [tab])
 
-  // Positionne le slider quand l'onglet change (clic ou fin de swipe)
+  // Clic sur un onglet → on aligne le scroller sur le bon panneau
   useEffect(() => {
-    const el = containerRef.current, track = trackRef.current
-    if (!el || !track) return
-    track.style.transition = 'transform 0.28s ease'
-    track.style.transform = `translateX(${tab === 'dm' ? -el.clientWidth : 0}px)`
+    const sc = scrollerRef.current
+    if (!sc) return
+    programmatic.current = true
+    sc.scrollTo({ left: tab === 'dm' ? sc.clientWidth : 0, behavior: 'smooth' })
+    const t = setTimeout(() => { programmatic.current = false }, 400)
+    return () => clearTimeout(t)
   }, [tab])
 
-  // Suivi du doigt (listeners natifs non passifs)
-  useEffect(() => {
-    const el = containerRef.current, track = trackRef.current
-    if (!el || !track) return
-    let startX = 0, startY = 0, dragging = false, decided = false, horizontal = false
-    function onStart(e) {
-      startX = e.touches[0].clientX; startY = e.touches[0].clientY
-      dragging = true; decided = false; horizontal = false
-    }
-    function onMove(e) {
-      if (!dragging) return
-      const dx = e.touches[0].clientX - startX
-      const dy = e.touches[0].clientY - startY
-      if (!decided && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
-        decided = true
-        horizontal = Math.abs(dx) > Math.abs(dy)
-      }
-      if (decided && horizontal) {
-        e.preventDefault() // bloque le scroll vertical pendant le swipe
-        const base = tabRef.current === 'dm' ? -el.clientWidth : 0
-        const offset = Math.max(-el.clientWidth, Math.min(0, base + dx))
-        track.style.transition = 'none'
-        track.style.transform = `translateX(${offset}px)`
-      }
-    }
-    function onEnd(e) {
-      if (!dragging) return
-      dragging = false
-      if (!horizontal) return
-      const dx = e.changedTouches[0].clientX - startX
-      track.style.transition = 'transform 0.28s ease'
-      if (dx < -el.clientWidth * 0.22 && tabRef.current === 'active') setTab('dm')
-      else if (dx > el.clientWidth * 0.22 && tabRef.current === 'dm') setTab('active')
-      else track.style.transform = `translateX(${tabRef.current === 'dm' ? -el.clientWidth : 0}px)`
-    }
-    el.addEventListener('touchstart', onStart, { passive: true })
-    el.addEventListener('touchmove', onMove, { passive: false })
-    el.addEventListener('touchend', onEnd, { passive: true })
-    return () => {
-      el.removeEventListener('touchstart', onStart)
-      el.removeEventListener('touchmove', onMove)
-      el.removeEventListener('touchend', onEnd)
-    }
-  }, [])
+  // Swipe manuel → on met à jour l'onglet actif selon le panneau visible
+  function handleScroll() {
+    if (programmatic.current) return
+    const sc = scrollerRef.current
+    if (!sc) return
+    const next = sc.scrollLeft > sc.clientWidth / 2 ? 'dm' : 'active'
+    if (next !== tabRef.current) setTab(next)
+  }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100dvh - 80px)' }}>
 
       {/* ── En-tête ── */}
       <div style={{ padding: '30px 20px 16px' }}>
@@ -174,11 +140,18 @@ export default function MessagesPage() {
         </TabBtn>
       </div>
 
-      {/* ── Contenu : slider swipeable (Sorties ↔ MP) ── */}
-      <div ref={containerRef} style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-        <div ref={trackRef} style={{ display: 'flex', width: '200%', height: '100%', transform: 'translateX(0)' }}>
+      {/* ── Contenu : swipe natif (scroll-snap) entre Sorties ↔ MP ── */}
+      <div
+        ref={scrollerRef}
+        onScroll={handleScroll}
+        style={{
+          flex: 1, minHeight: 0, display: 'flex',
+          overflowX: 'auto', overflowY: 'hidden',
+          scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch',
+        }}
+      >
         {/* Panneau Sorties */}
-        <div style={{ width: '50%', height: '100%', overflowY: 'auto', overflowX: 'hidden' }}>
+        <div style={{ flex: '0 0 100%', height: '100%', overflowY: 'auto', scrollSnapAlign: 'start', scrollSnapStop: 'always' }}>
           {eventsLoading ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '48px 0' }}>
               <Spinner />
@@ -204,7 +177,7 @@ export default function MessagesPage() {
         </div>
 
         {/* Panneau Messages privés */}
-        <div style={{ width: '50%', height: '100%', overflowY: 'auto', overflowX: 'hidden' }}>
+        <div style={{ flex: '0 0 100%', height: '100%', overflowY: 'auto', scrollSnapAlign: 'start', scrollSnapStop: 'always' }}>
           {dmLoading ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '48px 0' }}>
               <Spinner />
@@ -222,7 +195,6 @@ export default function MessagesPage() {
               ))}
             </div>
           )}
-        </div>
         </div>
       </div>
     </div>
