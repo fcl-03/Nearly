@@ -173,19 +173,37 @@ async def search_users(
     return list(result.scalars().all())
 
 
+def _haversine_km_user(lat: float, lon: float):
+    """Expression SQLAlchemy : distance Haversine (km) entre un point fixe
+    et les colonnes latitude/longitude de User."""
+    dlat = func.radians(User.latitude - lat)
+    dlon = func.radians(User.longitude - lon)
+    a = (
+        func.sin(dlat / 2) * func.sin(dlat / 2)
+        + func.cos(func.radians(lat))
+        * func.cos(func.radians(User.latitude))
+        * func.sin(dlon / 2)
+        * func.sin(dlon / 2)
+    )
+    return 6371.0 * 2 * func.atan2(func.sqrt(a), func.sqrt(1 - a))
+
+
+# Rayon des suggestions d'amis (km) : « dans le coin », pas uniquement la même commune
+FRIEND_SUGGESTION_RADIUS_KM = 30.0
+
+
 async def get_friend_suggestions(
     db: AsyncSession,
     current_user: User,
     limit: int = 30,
 ) -> list[User]:
-    """Suggère des utilisateurs vérifiés de la même ville, hors relations existantes.
+    """Suggère des utilisateurs vérifiés proches géographiquement, hors relations.
 
-    Exclut : soi-même, les amis, les demandes en cours (envoyées/reçues) et
-    tout blocage (dans les deux sens). Triés par activité récente.
+    Matching par proximité (rayon ~30 km autour de la position du user) plutôt que
+    sur le nom exact de la ville : une commune limitrophe (ex. La Chapelle-Saint-Luc
+    ↔ Troyes) doit remonter. Fallback sur le nom de ville si la position est absente.
+    Exclut : soi-même, amis, demandes en cours, blocages (dans les deux sens).
     """
-    if not current_user.city:
-        return []
-
     # Tous les utilisateurs déjà en relation avec moi (ami, demande, blocage) → exclus
     rel_result = await db.execute(
         select(Friendship.requester_id, Friendship.addressee_id).where(
@@ -200,13 +218,37 @@ async def get_friend_suggestions(
         excluded_ids.add(requester_id)
         excluded_ids.add(addressee_id)
 
+    base_filters = (
+        User.is_verified == True,  # noqa: E712
+        User.is_banned == False,  # noqa: E712
+        User.id.notin_(excluded_ids),
+    )
+
+    # Cas nominal : on connaît la position → rayon géographique, triés du plus proche
+    if current_user.latitude is not None and current_user.longitude is not None:
+        distance = _haversine_km_user(current_user.latitude, current_user.longitude)
+        result = await db.execute(
+            select(User)
+            .where(
+                User.latitude.isnot(None),
+                User.longitude.isnot(None),
+                distance <= FRIEND_SUGGESTION_RADIUS_KM,
+                *base_filters,
+            )
+            .order_by(distance)
+            .limit(limit)
+        )
+        return list(result.scalars().all())
+
+    # Fallback : pas de position → matching tolérant sur le nom de ville
+    if not current_user.city:
+        return []
+    norm_city = current_user.city.strip().lower().replace('-', '').replace(' ', '')
     result = await db.execute(
         select(User)
         .where(
-            func.lower(User.city) == current_user.city.strip().lower(),
-            User.is_verified == True,  # noqa: E712
-            User.is_banned == False,  # noqa: E712
-            User.id.notin_(excluded_ids),
+            func.replace(func.replace(func.lower(User.city), '-', ''), ' ', '') == norm_city,
+            *base_filters,
         )
         .order_by(User.last_active_at.desc())
         .limit(limit)

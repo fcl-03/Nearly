@@ -272,7 +272,7 @@ export default function EventsPage() {
           const name = d.address?.city || d.address?.town || d.address?.village || 'Ma position'
           setCity(name)
           sessionStorage.setItem(CITY_KEY, name)
-          persistCity(name)
+          persistCity(name, pos)
         } catch {}
       },
       () => {
@@ -313,19 +313,25 @@ export default function EventsPage() {
     setSearchFocused(false)
   }
 
-  // Persiste la ville RÉELLE du user en base (≠ ville recherchée) — nécessaire aux
-  // suggestions d'amis de la même ville (BUG 20 : sinon city = null → 0 suggestion).
-  function persistCity(name) {
-    if (name && name !== 'Ma position' && user?.city !== name) {
-      api.put('/users/me', { city: name }).then(({ data }) => setUser(data)).catch(() => {})
+  // Persiste la ville + la position RÉELLE du user en base (≠ ville recherchée).
+  // La position sert aux suggestions d'amis par proximité (rayon géo, ≠ nom de ville exact).
+  function persistCity(name, pos) {
+    const payload = {}
+    if (name && name !== 'Ma position' && user?.city !== name) payload.city = name
+    // Position : enregistrée si on en a une fraîche et qu'elle n'est pas encore en base
+    if (pos && user?.latitude == null) {
+      payload.latitude = pos[0]
+      payload.longitude = pos[1]
     }
+    if (!Object.keys(payload).length) return
+    api.put('/users/me', payload).then(({ data }) => setUser(data)).catch(() => {})
   }
 
-  // Backfill pour les comptes existants sans ville en base
+  // Backfill pour les comptes existants sans ville/position en base
   useEffect(() => {
-    if (user && !user.city && city && city !== 'Ma position') persistCity(city)
+    if (user && (!user.city || user.latitude == null) && userPos) persistCity(city, userPos)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id])
+  }, [user?.id, userPos])
 
   function handleFilterClick(key) {
     setActiveFilter(key)
